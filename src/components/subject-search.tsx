@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,12 +13,18 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Skeleton } from "./ui/skeleton";
 
 export function SubjectSearch() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const handleSearch = async (e: FormEvent) => {
     e.preventDefault();
@@ -34,6 +40,25 @@ export function SubjectSearch() {
       setIsLoading(false);
     }
   };
+  
+  if (!isMounted) {
+    return (
+       <Card>
+          <CardHeader>
+            <CardTitle className="font-headline text-lg flex items-center gap-2">
+              <Search className="h-5 w-5 text-primary" />
+              Search Subjects
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2 mb-4">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-10" />
+            </div>
+          </CardContent>
+        </Card>
+    )
+  }
 
   return (
     <Card>
