@@ -2,6 +2,10 @@ import type {Metadata} from 'next';
 import { Toaster } from "@/components/ui/toaster"
 import './globals.css';
 import { cn } from '@/lib/utils';
+import { Sidebar, SidebarContent, SidebarHeader, SidebarProvider } from '@/components/ui/sidebar';
+import { GraduationCap } from 'lucide-react';
+import { ClassSelector } from '@/components/class-selector';
+import { AppSidebar } from '@/components/app-sidebar';
 
 export const metadata: Metadata = {
   title: 'SchoolZen',
@@ -25,8 +29,11 @@ export default function RootLayout({
         "font-body antialiased",
         "min-h-screen bg-background font-sans"
         )}>
-        {children}
-        <Toaster />
+        <SidebarProvider>
+          <AppSidebar />
+          {children}
+          <Toaster />
+        </SidebarProvider>
       </body>
     </html>
   );

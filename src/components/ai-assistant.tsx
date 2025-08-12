@@ -13,15 +13,7 @@ import {
   Send,
   Sparkles,
   BookOpen,
-  MessageCircle,
 } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -93,7 +85,6 @@ export function AIAssistant() {
   const [tool, setTool] = useState<Tool>("chat");
   const [isLoading, setIsLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -202,111 +193,93 @@ export function AIAssistant() {
     }
   };
 
-  if (!isMounted) {
-    return (
-        <Button variant="ghost" size="icon" disabled>
-            <Loader2 className="h-5 w-5 animate-spin" />
-        </Button>
-    )
-  }
-
   return (
-    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="icon">
-          <MessageCircle className="h-5 w-5" />
-          <span className="sr-only">Open AI Assistant</span>
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-3xl h-[90vh] flex flex-col p-0">
-          <Card className="h-full flex flex-col border-0 rounded-lg shadow-none">
-            <CardHeader className="flex flex-row items-center justify-between border-b">
-              <CardTitle className="font-headline text-primary flex items-center gap-2">
-                <Bot /> AI Assistant
-              </CardTitle>
-              <Select value={tool} onValueChange={(v) => setTool(v as Tool)}>
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="Select tool" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(toolConfig).map(([key, { icon: Icon, name }]) => (
-                    <SelectItem key={key} value={key}>
-                      <div className="flex items-center gap-2">
-                        <Icon className="h-4 w-4" /> {name}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </CardHeader>
-            <CardContent className="flex-grow overflow-hidden p-4 md:p-6">
-              <ScrollArea className="h-full pr-4" ref={scrollAreaRef}>
-                <div className="space-y-4">
-                   {messages.length === 0 && (
-                        <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
-                            <Bot className="h-12 w-12 mb-4" />
-                            <p className="text-lg font-semibold">Welcome to the AI Assistant</p>
-                            <p>Ask me anything about your studies!</p>
-                        </div>
-                    )}
-                  {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={cn(
-                        "flex items-start gap-3",
-                        message.role === "user" ? "justify-end" : "justify-start"
-                      )}
-                    >
-                      {message.role === "assistant" && (
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback className="bg-primary text-primary-foreground">
-                            <Bot />
-                          </AvatarFallback>
-                        </Avatar>
-                      )}
-                      <div
-                        className={cn(
-                          "max-w-[80%] rounded-xl p-3 text-sm whitespace-pre-wrap",
-                          message.role === "user"
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted"
-                        )}
-                      >
-                        {typeof message.content === 'string' ? <p>{message.content}</p> : message.content}
-                      </div>
-                      {message.role === "user" && (
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback>U</AvatarFallback>
-                        </Avatar>
-                      )}
-                    </div>
-                  ))}
+    <Card className="h-full flex flex-col border-0 rounded-lg shadow-none">
+      <CardHeader className="flex flex-row items-center justify-between border-b">
+        <CardTitle className="font-headline text-primary flex items-center gap-2">
+          <Bot /> AI Assistant
+        </CardTitle>
+        <Select value={tool} onValueChange={(v) => setTool(v as Tool)}>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="Select tool" />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(toolConfig).map(([key, { icon: Icon, name }]) => (
+              <SelectItem key={key} value={key}>
+                <div className="flex items-center gap-2">
+                  <Icon className="h-4 w-4" /> {name}
                 </div>
-              </ScrollArea>
-            </CardContent>
-            <CardFooter className="border-t pt-4">
-              <form onSubmit={handleSubmit} className="flex w-full items-center gap-2">
-                <Textarea
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder={`Ask about math, get a quiz on history, or just chat...`}
-                  className="flex-grow resize-none"
-                  rows={1}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      handleSubmit(e);
-                    }
-                  }}
-                />
-                <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
-                  {isLoading ? <Loader2 className="animate-spin" /> : <Send />}
-                  <span className="sr-only">Send message</span>
-                </Button>
-              </form>
-            </CardFooter>
-          </Card>
-      </DialogContent>
-    </Dialog>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </CardHeader>
+      <CardContent className="flex-grow overflow-hidden p-4 md:p-6">
+        <ScrollArea className="h-full pr-4" ref={scrollAreaRef}>
+          <div className="space-y-4">
+             {messages.length === 0 && (
+                  <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+                      <Bot className="h-12 w-12 mb-4" />
+                      <p className="text-lg font-semibold">Welcome to the AI Assistant</p>
+                      <p>Ask me anything about your studies!</p>
+                  </div>
+              )}
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={cn(
+                  "flex items-start gap-3",
+                  message.role === "user" ? "justify-end" : "justify-start"
+                )}
+              >
+                {message.role === "assistant" && (
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-primary text-primary-foreground">
+                      <Bot />
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+                <div
+                  className={cn(
+                    "max-w-[80%] rounded-xl p-3 text-sm whitespace-pre-wrap",
+                    message.role === "user"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted"
+                  )}
+                >
+                  {typeof message.content === 'string' ? <p>{message.content}</p> : message.content}
+                </div>
+                {message.role === "user" && (
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback>U</AvatarFallback>
+                  </Avatar>
+                )}
+              </div>
+            ))}
+          </div>
+        </ScrollArea>
+      </CardContent>
+      <CardFooter className="border-t pt-4">
+        <form onSubmit={handleSubmit} className="flex w-full items-center gap-2">
+          <Textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={`Ask about math, get a quiz on history, or just chat...`}
+            className="flex-grow resize-none"
+            rows={1}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                handleSubmit(e);
+              }
+            }}
+          />
+          <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
+            {isLoading ? <Loader2 className="animate-spin" /> : <Send />}
+            <span className="sr-only">Send message</span>
+          </Button>
+        </form>
+      </CardFooter>
+    </Card>
   );
 }
 
