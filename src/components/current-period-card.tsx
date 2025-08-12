@@ -18,6 +18,14 @@ export function CurrentPeriodCard() {
         setPeriod(data);
       } catch (error) {
         console.error("Failed to fetch current period:", error);
+        setPeriod({
+            subject: "Error",
+            teacher: "-",
+            time: "-",
+            room: "-",
+            status: "finished",
+            message: "Could not load schedule"
+        })
       } finally {
         setIsLoading(false);
       }
@@ -66,10 +74,12 @@ export function CurrentPeriodCard() {
               <BookOpen className="h-5 w-5 text-primary" />
               <span className="font-semibold">{period.subject}</span>
             </div>
-            <div className="flex items-center gap-3 text-muted-foreground">
-              <Clock className="h-5 w-5" />
-              <span>{period.time}</span>
-            </div>
+             {period.time && (
+              <div className="flex items-center gap-3 text-muted-foreground">
+                <Clock className="h-5 w-5" />
+                <span>{period.time}</span>
+              </div>
+            )}
             {period.message && (
                <div className="flex items-center gap-3 text-muted-foreground pt-2">
                 <MessageSquare className="h-5 w-5" />

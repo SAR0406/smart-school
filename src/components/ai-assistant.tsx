@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useRef, type FormEvent } from "react";
@@ -279,7 +278,7 @@ export function AIAssistant() {
 
   return (
     <TooltipProvider>
-      <Card className="h-full flex flex-col border-0 rounded-lg shadow-none">
+      <Card className="h-full flex flex-col rounded-lg shadow-lg">
         <CardHeader className="flex flex-row items-center justify-between border-b">
           <CardTitle className="font-headline text-primary flex items-center gap-2">
             <Bot /> AI Assistant
