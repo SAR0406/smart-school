@@ -13,8 +13,15 @@ import {
   Send,
   Sparkles,
   BookOpen,
+  MessageCircle,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -31,6 +38,7 @@ import { useToast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "./ui/card";
 
 type Message = {
   id: string;
@@ -85,6 +93,7 @@ export function AIAssistant() {
   const [tool, setTool] = useState<Tool>("chat");
   const [isLoading, setIsLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -105,12 +114,11 @@ export function AIAssistant() {
     if(!isMounted) return;
     try {
         const storableMessages = messages.map(msg => {
-            // Don't store complex react components, only strings
             if (typeof msg.content !== 'string') {
                 return { ...msg, content: `[Interactive ${msg.tool} output]` };
             }
             return msg;
-        }).filter(m => m.content); // Filter out empty/loading messages before storing
+        }).filter(m => m.content); 
         
         if(storableMessages.length > 0) {
            localStorage.setItem("schoolzen-chat", JSON.stringify(storableMessages));
@@ -143,7 +151,6 @@ export function AIAssistant() {
     setInput("");
     setIsLoading(true);
     
-    // Add a loading message
     const loadingMessageId = (Date.now() + 1).toString();
     const loadingMessage: Message = {
         id: loadingMessageId,
@@ -157,7 +164,6 @@ export function AIAssistant() {
       const responseText = await getAIResponse(tool, input);
 
       if (tool === 'quiz') {
-        // Attempt to parse quiz from a more flexible format
         try {
             const quizData = parseQuiz(responseText);
             const topicMatch = input.match(/on (.*)/i);
@@ -172,7 +178,7 @@ export function AIAssistant() {
       }
       
       const assistantMessage: Message = {
-        id: loadingMessageId, // Replace the loading message
+        id: loadingMessageId, 
         role: "assistant",
         content: responseContent,
       };
@@ -183,10 +189,10 @@ export function AIAssistant() {
       toast({
         variant: "destructive",
         title: "Uh oh! Something went wrong.",
-        description: "There was a problem with the AI assistant. Please check the console.",
+        description: "There was a problem connecting to the AI assistant.",
       });
       const errorMessage: Message = {
-        id: loadingMessageId, // Replace the loading message
+        id: loadingMessageId,
         role: "assistant",
         content: "I'm sorry, I encountered an error. Please try again.",
       };
@@ -198,102 +204,112 @@ export function AIAssistant() {
 
   if (!isMounted) {
     return (
-        <Card className="h-[calc(100vh-8rem)] flex flex-col">
-         <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="font-headline text-primary flex items-center gap-2">
-              <Bot /> AI Assistant
-            </CardTitle>
-         </CardHeader>
-         <CardContent className="flex-grow flex items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-         </CardContent>
-        </Card>
+        <Button variant="ghost" size="icon" disabled>
+            <Loader2 className="h-5 w-5 animate-spin" />
+        </Button>
     )
   }
 
   return (
-    <Card className="h-[calc(100vh-8rem)] flex flex-col">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="font-headline text-primary flex items-center gap-2">
-          <Bot /> AI Assistant
-        </CardTitle>
-        <Select value={tool} onValueChange={(v) => setTool(v as Tool)}>
-          <SelectTrigger className="w-[120px]">
-            <SelectValue placeholder="Select tool" />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(toolConfig).map(([key, { icon: Icon, name }]) => (
-              <SelectItem key={key} value={key}>
-                <div className="flex items-center gap-2">
-                  <Icon className="h-4 w-4" /> {name}
+    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="icon">
+          <MessageCircle className="h-5 w-5" />
+          <span className="sr-only">Open AI Assistant</span>
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-3xl h-[90vh] flex flex-col p-0">
+          <Card className="h-full flex flex-col border-0 rounded-lg shadow-none">
+            <CardHeader className="flex flex-row items-center justify-between border-b">
+              <CardTitle className="font-headline text-primary flex items-center gap-2">
+                <Bot /> AI Assistant
+              </CardTitle>
+              <Select value={tool} onValueChange={(v) => setTool(v as Tool)}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Select tool" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(toolConfig).map(([key, { icon: Icon, name }]) => (
+                    <SelectItem key={key} value={key}>
+                      <div className="flex items-center gap-2">
+                        <Icon className="h-4 w-4" /> {name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </CardHeader>
+            <CardContent className="flex-grow overflow-hidden p-4 md:p-6">
+              <ScrollArea className="h-full pr-4" ref={scrollAreaRef}>
+                <div className="space-y-4">
+                   {messages.length === 0 && (
+                        <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+                            <Bot className="h-12 w-12 mb-4" />
+                            <p className="text-lg font-semibold">Welcome to the AI Assistant</p>
+                            <p>Ask me anything about your studies!</p>
+                        </div>
+                    )}
+                  {messages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={cn(
+                        "flex items-start gap-3",
+                        message.role === "user" ? "justify-end" : "justify-start"
+                      )}
+                    >
+                      {message.role === "assistant" && (
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className="bg-primary text-primary-foreground">
+                            <Bot />
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
+                      <div
+                        className={cn(
+                          "max-w-[80%] rounded-xl p-3 text-sm whitespace-pre-wrap",
+                          message.role === "user"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted"
+                        )}
+                      >
+                        {typeof message.content === 'string' ? <p>{message.content}</p> : message.content}
+                      </div>
+                      {message.role === "user" && (
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback>U</AvatarFallback>
+                        </Avatar>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </CardHeader>
-      <CardContent className="flex-grow overflow-hidden">
-        <ScrollArea className="h-full pr-4" ref={scrollAreaRef}>
-          <div className="space-y-4">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={cn(
-                  "flex items-start gap-3",
-                  message.role === "user" ? "justify-end" : "justify-start"
-                )}
-              >
-                {message.role === "assistant" && (
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-primary text-primary-foreground">
-                      <Bot />
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-                <div
-                  className={cn(
-                    "max-w-[80%] rounded-xl p-3 text-sm whitespace-pre-wrap",
-                    message.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted"
-                  )}
-                >
-                  {typeof message.content === 'string' ? <p>{message.content}</p> : message.content}
-                </div>
-                {message.role === "user" && (
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback>U</AvatarFallback>
-                  </Avatar>
-                )}
-              </div>
-            ))}
-          </div>
-        </ScrollArea>
-      </CardContent>
-      <CardFooter>
-        <form onSubmit={handleSubmit} className="flex w-full items-center gap-2">
-          <Textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={`Message your AI assistant...`}
-            className="flex-grow resize-none"
-            rows={1}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                handleSubmit(e);
-              }
-            }}
-          />
-          <Button type="submit" size="icon" disabled={isLoading}>
-            <Send className="h-4 w-4" />
-          </Button>
-        </form>
-      </CardFooter>
-    </Card>
+              </ScrollArea>
+            </CardContent>
+            <CardFooter className="border-t pt-4">
+              <form onSubmit={handleSubmit} className="flex w-full items-center gap-2">
+                <Textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder={`Ask about math, get a quiz on history, or just chat...`}
+                  className="flex-grow resize-none"
+                  rows={1}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      handleSubmit(e);
+                    }
+                  }}
+                />
+                <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
+                  {isLoading ? <Loader2 className="animate-spin" /> : <Send />}
+                  <span className="sr-only">Send message</span>
+                </Button>
+              </form>
+            </CardFooter>
+          </Card>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-// More robust quiz parser
 function parseQuiz(text: string): any[] {
     const questions = [];
     const questionBlocks = text.split(/\n\s*\d+\.\s/g).filter(Boolean);
@@ -320,7 +336,7 @@ function parseQuiz(text: string): any[] {
             } else {
                  const answerMatch = line.match(/Answer:\s*[a-d]\)/i);
                  if (answerMatch) {
-                     correctAnswerIndex = answerMatch[0].toLowerCase().charCodeAt(answerMatch[0].length - 2) - 97; // 'a' -> 0
+                     correctAnswerIndex = answerMatch[0].toLowerCase().charCodeAt(answerMatch[0].length - 2) - 97;
                  }
             }
         }

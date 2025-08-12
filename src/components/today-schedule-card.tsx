@@ -27,14 +27,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 const LoadingSkeleton = () => (
     <div className="space-y-2">
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-8 w-full" />
+        {[...Array(8)].map((_, i) => (
+            <Skeleton key={i} className="h-10 w-full" />
+        ))}
     </div>
 );
 
@@ -62,65 +57,44 @@ export function TodayScheduleCard() {
     }
     fetchSchedule();
   }, [isMounted]);
-  
-  if (!isMounted) {
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="font-headline text-lg flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-primary" />
-                Today's Schedule
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-                <LoadingSkeleton />
-            </CardContent>
-            <CardFooter className="flex justify-end">
-                 <Button variant="outline" disabled>
-                    View Full Week
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-            </CardFooter>
-        </Card>
-    )
-  }
-
 
   return (
-    <Card>
+    <Card className="h-full flex flex-col">
       <CardHeader>
         <CardTitle className="font-headline text-lg flex items-center gap-2">
           <Calendar className="h-5 w-5 text-primary" />
           Today's Schedule
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-grow">
         {isLoading ? (
             <LoadingSkeleton />
         ) : schedule.length > 0 ? (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[100px]">Time</TableHead>
-                <TableHead>Subject</TableHead>
-                <TableHead className="hidden md:table-cell">Room</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {schedule.map((period, index) => (
-                <TableRow key={index}>
-                  <TableCell>{period.time}</TableCell>
-                  <TableCell className="font-medium">{period.subject}</TableCell>
-                  <TableCell className="hidden md:table-cell">{period.room}</TableCell>
+          <ScrollArea className="h-[300px]">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[100px]">Time</TableHead>
+                  <TableHead>Subject</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {schedule.map((period, index) => (
+                  <TableRow key={index} className="transition-colors hover:bg-muted/50">
+                    <TableCell>{period.time}</TableCell>
+                    <TableCell className="font-medium">{period.subject}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </ScrollArea>
         ) : (
-            <p className="text-muted-foreground text-center py-4">No classes scheduled for today.</p>
+            <div className="flex items-center justify-center h-full">
+                <p className="text-muted-foreground text-center py-4">No classes scheduled for today.</p>
+            </div>
         )}
       </CardContent>
-      <CardFooter className="flex justify-end">
+      <CardFooter className="flex justify-end border-t pt-4 mt-auto">
          <Dialog>
             <DialogTrigger asChild>
                 <Button variant="outline">

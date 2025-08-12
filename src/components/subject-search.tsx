@@ -14,6 +14,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Skeleton } from "./ui/skeleton";
+import { ScrollArea } from "./ui/scroll-area";
 
 export function SubjectSearch() {
   const [query, setQuery] = useState("");
@@ -47,7 +48,7 @@ export function SubjectSearch() {
           <CardHeader>
             <CardTitle className="font-headline text-lg flex items-center gap-2">
               <Search className="h-5 w-5 text-primary" />
-              Search Subjects
+              Search Schedule
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -61,14 +62,14 @@ export function SubjectSearch() {
   }
 
   return (
-    <Card>
+    <Card className="h-full flex flex-col">
       <CardHeader>
         <CardTitle className="font-headline text-lg flex items-center gap-2">
           <Search className="h-5 w-5 text-primary" />
-          Search Subjects
+          Search Schedule
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-grow flex flex-col">
         <form onSubmit={handleSearch} className="flex gap-2 mb-4">
           <Input
             type="text"
@@ -86,35 +87,39 @@ export function SubjectSearch() {
           </Button>
         </form>
 
-        <div className="mt-4">
-          {isLoading ? (
-            <div className="text-center text-muted-foreground">Searching...</div>
-          ) : searched && results && Object.keys(results).length > 0 ? (
-            <Accordion type="single" collapsible className="w-full">
-              {Object.entries(results).map(([day, periods]) => (
-                <AccordionItem value={day} key={day}>
-                  <AccordionTrigger className="capitalize text-primary font-semibold">
-                    <div className="flex items-center gap-2">
-                        <CalendarDays className="h-4 w-4" />
-                        {day}
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <ul className="space-y-2 pl-4 border-l-2 border-primary/50 ml-2">
-                      {periods.map((period, index) => (
-                        <li key={index} className="text-sm">
-                          <span className="font-medium">{period.time}:</span> {period.subject}
-                        </li>
-                      ))}
-                    </ul>
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          ) : searched ? (
-            <div className="text-center text-muted-foreground pt-4">No results found for "{query}".</div>
-          ) : null}
-        </div>
+        <ScrollArea className="flex-grow -mx-6">
+            <div className="px-6">
+              {isLoading ? (
+                <div className="text-center text-muted-foreground pt-4">Searching...</div>
+              ) : searched && results && Object.keys(results).length > 0 ? (
+                <Accordion type="single" collapsible className="w-full">
+                  {Object.entries(results).map(([day, periods]) => (
+                    <AccordionItem value={day} key={day}>
+                      <AccordionTrigger className="capitalize text-primary font-semibold">
+                        <div className="flex items-center gap-2">
+                            <CalendarDays className="h-4 w-4" />
+                            {day}
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <ul className="space-y-2 pl-4 border-l-2 border-primary/50 ml-2">
+                          {periods.map((period, index) => (
+                            <li key={index} className="text-sm">
+                              <span className="font-medium">{period.time}:</span> {period.subject}
+                            </li>
+                          ))}
+                        </ul>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              ) : searched ? (
+                <div className="text-center text-muted-foreground pt-4">No results found for "{query}".</div>
+              ) : (
+                <div className="text-center text-muted-foreground pt-4">Search for a subject to see upcoming classes.</div>
+              )}
+            </div>
+        </ScrollArea>
       </CardContent>
     </Card>
   );
