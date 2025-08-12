@@ -70,6 +70,8 @@ async function getAIResponse(tool: Tool, prompt: string) {
         body: JSON.stringify({ prompt, stream: false })
     });
     if (!response.ok) {
+        const errorBody = await response.text();
+        console.error("API Error:", errorBody);
         throw new Error(`API request failed with status ${response.status}`);
     }
     const data = await response.json();
@@ -88,27 +90,43 @@ export function AIAssistant() {
 
   useEffect(() => {
     setIsMounted(true);
-    const storedMessages = localStorage.getItem("schoolzen-chat");
-    if (storedMessages) {
-      // Temporarily disable loading from localStorage to avoid rendering complex components
-      // setMessages(JSON.parse(storedMessages));
+    try {
+        const storedMessages = localStorage.getItem("schoolzen-chat");
+        if (storedMessages) {
+          setMessages(JSON.parse(storedMessages));
+        }
+    } catch (e) {
+        console.error("Could not load messages from localStorage", e);
+        localStorage.removeItem("schoolzen-chat");
     }
   }, []);
 
   useEffect(() => {
-    // Only store string messages to avoid serialization issues with React components
-    const storableMessages = messages.map(msg => 
-        typeof msg.content !== 'string' ? { ...msg, content: `[${msg.tool} output]` } : msg
-    );
-    localStorage.setItem("schoolzen-chat", JSON.stringify(storableMessages));
+    if(!isMounted) return;
+    try {
+        const storableMessages = messages.map(msg => {
+            // Don't store complex react components, only strings
+            if (typeof msg.content !== 'string') {
+                return { ...msg, content: `[Interactive ${msg.tool} output]` };
+            }
+            return msg;
+        }).filter(m => m.content); // Filter out empty/loading messages before storing
+        
+        if(storableMessages.length > 0) {
+           localStorage.setItem("schoolzen-chat", JSON.stringify(storableMessages));
+        }
 
+    } catch (e) {
+        console.error("Could not save messages to localStorage", e);
+    }
+    
     if (scrollAreaRef.current) {
       scrollAreaRef.current.scrollTo({
         top: scrollAreaRef.current.scrollHeight,
         behavior: 'smooth',
       });
     }
-  }, [messages]);
+  }, [messages, isMounted]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -165,7 +183,7 @@ export function AIAssistant() {
       toast({
         variant: "destructive",
         title: "Uh oh! Something went wrong.",
-        description: "There was a problem with the AI assistant.",
+        description: "There was a problem with the AI assistant. Please check the console.",
       });
       const errorMessage: Message = {
         id: loadingMessageId, // Replace the loading message
