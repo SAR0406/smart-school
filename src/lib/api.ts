@@ -1,13 +1,11 @@
 import type { Class, Period, WeekSchedule, SearchResult } from './types';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
+// Use a relative path for API calls, which will be handled by a Next.js proxy.
+const API_BASE = '/api'; 
 const DEFAULT_CLASS = '10a'; // Default class to use if none is selected
 
 async function fetchAPI(endpoint: string, params: Record<string, string> = {}) {
-  if (!API_BASE) {
-    throw new Error("NEXT_PUBLIC_API_BASE_URL is not defined in .env file");
-  }
-  const url = new URL(`${API_BASE}${endpoint}`);
+  const url = new URL(`${API_BASE}${endpoint}`, typeof window !== 'undefined' ? window.location.origin : 'http://localhost:9002');
   
   // Get selected class from localStorage if available
   const savedClass = typeof window !== 'undefined' ? localStorage.getItem('selectedClass') : null;
