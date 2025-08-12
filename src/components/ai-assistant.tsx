@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef, type FormEvent } from "react";
@@ -13,6 +14,8 @@ import {
   Send,
   Sparkles,
   BookOpen,
+  Mic,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,6 +34,12 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "./ui/card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./ui/tooltip";
 
 type Message = {
   id: string;
@@ -85,7 +94,9 @@ export function AIAssistant() {
   const [tool, setTool] = useState<Tool>("chat");
   const [isLoading, setIsLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -99,6 +110,40 @@ export function AIAssistant() {
         console.error("Could not load messages from localStorage", e);
         localStorage.removeItem("schoolzen-chat");
     }
+
+    // Speech Recognition setup
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+      recognitionRef.current.lang = 'en-US';
+
+      recognitionRef.current.onstart = () => {
+        setIsListening(true);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+      
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setInput(transcript);
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onerror = (event: any) => {
+        console.error("Speech recognition error", event.error);
+        toast({
+          variant: "destructive",
+          title: "Voice Error",
+          description: `Could not understand audio. Please try again. (Error: ${event.error})`
+        });
+        setIsListening(false);
+      }
+    }
+
   }, []);
 
   useEffect(() => {
@@ -113,6 +158,8 @@ export function AIAssistant() {
         
         if(storableMessages.length > 0) {
            localStorage.setItem("schoolzen-chat", JSON.stringify(storableMessages));
+        } else {
+           localStorage.removeItem("schoolzen-chat");
         }
 
     } catch (e) {
@@ -126,6 +173,23 @@ export function AIAssistant() {
       });
     }
   }, [messages, isMounted]);
+
+  const handleClearChat = () => {
+      setMessages([]);
+      localStorage.removeItem("schoolzen-chat");
+      toast({
+          title: "Chat Cleared",
+          description: "Your conversation history has been removed."
+      });
+  }
+
+  const handleVoiceInput = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+    } else {
+      recognitionRef.current?.start();
+    }
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -193,93 +257,131 @@ export function AIAssistant() {
     }
   };
 
+  if (!isMounted) {
+    return (
+        <Card className="h-full flex flex-col items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </Card>
+    );
+  }
+
   return (
-    <Card className="h-full flex flex-col border-0 rounded-lg shadow-none">
-      <CardHeader className="flex flex-row items-center justify-between border-b">
-        <CardTitle className="font-headline text-primary flex items-center gap-2">
-          <Bot /> AI Assistant
-        </CardTitle>
-        <Select value={tool} onValueChange={(v) => setTool(v as Tool)}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Select tool" />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(toolConfig).map(([key, { icon: Icon, name }]) => (
-              <SelectItem key={key} value={key}>
-                <div className="flex items-center gap-2">
-                  <Icon className="h-4 w-4" /> {name}
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </CardHeader>
-      <CardContent className="flex-grow overflow-hidden p-4 md:p-6">
-        <ScrollArea className="h-full pr-4" ref={scrollAreaRef}>
-          <div className="space-y-4">
-             {messages.length === 0 && (
-                  <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
-                      <Bot className="h-12 w-12 mb-4" />
-                      <p className="text-lg font-semibold">Welcome to the AI Assistant</p>
-                      <p>Ask me anything about your studies!</p>
-                  </div>
-              )}
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={cn(
-                  "flex items-start gap-3",
-                  message.role === "user" ? "justify-end" : "justify-start"
+    <TooltipProvider>
+      <Card className="h-full flex flex-col border-0 rounded-lg shadow-none">
+        <CardHeader className="flex flex-row items-center justify-between border-b">
+          <CardTitle className="font-headline text-primary flex items-center gap-2">
+            <Bot /> AI Assistant
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={handleClearChat} disabled={messages.length === 0}>
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Clear Chat</span>
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>Clear Chat</p>
+                </TooltipContent>
+            </Tooltip>
+            
+            <Select value={tool} onValueChange={(v) => setTool(v as Tool)}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Select tool" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(toolConfig).map(([key, { icon: Icon, name }]) => (
+                  <SelectItem key={key} value={key}>
+                    <div className="flex items-center gap-2">
+                      <Icon className="h-4 w-4" /> {name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+        <CardContent className="flex-grow overflow-hidden p-4 md:p-6">
+          <ScrollArea className="h-full pr-4" ref={scrollAreaRef}>
+            <div className="space-y-4">
+               {messages.length === 0 && (
+                    <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+                        <Bot className="h-12 w-12 mb-4" />
+                        <p className="text-lg font-semibold">Welcome to the AI Assistant</p>
+                        <p>Ask me anything about your studies!</p>
+                    </div>
                 )}
-              >
-                {message.role === "assistant" && (
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-primary text-primary-foreground">
-                      <Bot />
-                    </AvatarFallback>
-                  </Avatar>
-                )}
+              {messages.map((message) => (
                 <div
+                  key={message.id}
                   className={cn(
-                    "max-w-[80%] rounded-xl p-3 text-sm whitespace-pre-wrap",
-                    message.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted"
+                    "flex items-start gap-3",
+                    message.role === "user" ? "justify-end" : "justify-start"
                   )}
                 >
-                  {typeof message.content === 'string' ? <p>{message.content}</p> : message.content}
+                  {message.role === "assistant" && (
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        <Bot />
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+                  <div
+                    className={cn(
+                      "max-w-[80%] rounded-xl p-3 text-sm whitespace-pre-wrap",
+                      message.role === "user"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted"
+                    )}
+                  >
+                    {typeof message.content === 'string' ? <p>{message.content}</p> : message.content}
+                  </div>
+                  {message.role === "user" && (
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback>U</AvatarFallback>
+                    </Avatar>
+                  )}
                 </div>
-                {message.role === "user" && (
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback>U</AvatarFallback>
-                  </Avatar>
-                )}
-              </div>
-            ))}
-          </div>
-        </ScrollArea>
-      </CardContent>
-      <CardFooter className="border-t pt-4">
-        <form onSubmit={handleSubmit} className="flex w-full items-center gap-2">
-          <Textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={`Ask about math, get a quiz on history, or just chat...`}
-            className="flex-grow resize-none"
-            rows={1}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                handleSubmit(e);
-              }
-            }}
-          />
-          <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
-            {isLoading ? <Loader2 className="animate-spin" /> : <Send />}
-            <span className="sr-only">Send message</span>
-          </Button>
-        </form>
-      </CardFooter>
-    </Card>
+              ))}
+            </div>
+          </ScrollArea>
+        </CardContent>
+        <CardFooter className="border-t pt-4">
+          <form onSubmit={handleSubmit} className="flex w-full items-center gap-2">
+            <Textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={isListening ? "Listening..." : `Ask about math, get a quiz on history, or just chat...`}
+              className="flex-grow resize-none"
+              rows={1}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  handleSubmit(e);
+                }
+              }}
+              disabled={isLoading}
+            />
+            {recognitionRef.current && (
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button type="button" size="icon" variant="ghost" onClick={handleVoiceInput} disabled={isLoading}>
+                            <Mic className={cn(isListening && 'text-primary animate-pulse')} />
+                             <span className="sr-only">Use Microphone</span>
+                        </Button>
+                    </TooltipTrigger>
+                     <TooltipContent>
+                        <p>{isListening ? 'Stop Listening' : 'Start Listening'}</p>
+                    </TooltipContent>
+                </Tooltip>
+            )}
+            <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
+              {isLoading ? <Loader2 className="animate-spin" /> : <Send />}
+              <span className="sr-only">Send message</span>
+            </Button>
+          </form>
+        </CardFooter>
+      </Card>
+    </TooltipProvider>
   );
 }
 
