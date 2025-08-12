@@ -13,8 +13,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getFullWeekSchedule } from "@/lib/api";
 import type { WeekSchedule, Period } from "@/lib/types";
-import { Loader2 } from "lucide-react";
 import { ScrollArea } from "./ui/scroll-area";
+import { Alert, AlertTitle, AlertDescription } from "./ui/alert";
+import { AlertTriangle } from "lucide-react";
 
 const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -33,6 +34,7 @@ const LoadingSkeleton = () => (
 export function FullWeekSchedule() {
   const [schedule, setSchedule] = useState<WeekSchedule | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -44,16 +46,33 @@ export function FullWeekSchedule() {
     
     async function fetchSchedule() {
       try {
+        const classId = localStorage.getItem("selectedClass");
+        if (!classId) {
+            setError("Please select a class to view the schedule.");
+            setIsLoading(false);
+            return;
+        }
         const data = await getFullWeekSchedule();
         setSchedule(data);
-      } catch (error) {
-        console.error("Failed to fetch week schedule:", error);
+      } catch (err) {
+        console.error("Failed to fetch week schedule:", err);
+        setError("Could not load the weekly schedule. Please try again later.");
       } finally {
         setIsLoading(false);
       }
     }
     fetchSchedule();
   }, [isMounted]);
+  
+  if (error) {
+    return (
+        <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+        </Alert>
+    )
+  }
 
   if (!isMounted || isLoading) {
     return <LoadingSkeleton />;
@@ -63,7 +82,7 @@ export function FullWeekSchedule() {
     <Tabs defaultValue="Monday" className="w-full h-full flex flex-col">
         <TabsList className="grid w-full grid-cols-3 md:grid-cols-7">
             {daysOfWeek.map(day => (
-                <TabsTrigger key={day} value={day}>{day.slice(0,3)}</TabsTrigger>
+                <TabsTrigger key={day} value={day}>{day}</TabsTrigger>
             ))}
         </TabsList>
         <ScrollArea className="flex-grow mt-4">
@@ -89,8 +108,6 @@ function ScheduleTable({ periods }: { periods: Period[] }) {
         <TableRow>
           <TableHead>Time</TableHead>
           <TableHead>Subject</TableHead>
-          <TableHead className="hidden md:table-cell">Teacher</TableHead>
-          <TableHead className="hidden md:table-cell">Room</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -98,8 +115,6 @@ function ScheduleTable({ periods }: { periods: Period[] }) {
           <TableRow key={index}>
             <TableCell>{period.time}</TableCell>
             <TableCell className="font-medium">{period.subject}</TableCell>
-            <TableCell className="hidden md:table-cell">{period.teacher}</TableCell>
-            <TableCell className="hidden md:table-cell">{period.room}</TableCell>
           </TableRow>
         ))}
       </TableBody>

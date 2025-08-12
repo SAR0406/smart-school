@@ -12,7 +12,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Loader2, ArrowRight } from "lucide-react";
+import { Calendar, ArrowRight } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +24,7 @@ import { getDaySchedule } from "@/lib/api";
 import type { Period } from "@/lib/types";
 import { FullWeekSchedule } from "./full-week-schedule";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 
 const LoadingSkeleton = () => (
     <div className="space-y-2">
@@ -36,6 +37,7 @@ const LoadingSkeleton = () => (
 export function TodayScheduleCard() {
   const [schedule, setSchedule] = useState<Period[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -47,10 +49,17 @@ export function TodayScheduleCard() {
     
     async function fetchSchedule() {
       try {
+        const classId = localStorage.getItem("selectedClass");
+        if (!classId) {
+            setError("Please select a class to view the schedule.");
+            setIsLoading(false);
+            return;
+        }
         const data = await getDaySchedule();
         setSchedule(data);
-      } catch (error) {
-        console.error("Failed to fetch today's schedule:", error);
+      } catch (err) {
+        console.error("Failed to fetch today's schedule:", err);
+        setError("Could not load today's schedule.");
       } finally {
         setIsLoading(false);
       }
@@ -69,8 +78,13 @@ export function TodayScheduleCard() {
       <CardContent className="flex-grow">
         {isLoading || !isMounted ? (
             <LoadingSkeleton />
+        ) : error ? (
+            <Alert>
+                <AlertTitle>No Class Selected</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+            </Alert>
         ) : schedule.length > 0 ? (
-          <ScrollArea className="h-full">
+          <ScrollArea className="h-full max-h-96">
             <Table>
               <TableHeader>
                 <TableRow>

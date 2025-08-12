@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BookOpen, Clock, Loader2, MessageSquare, User } from "lucide-react";
+import { BookOpen, Clock, Loader2, MessageSquare } from "lucide-react";
 import { getCurrentPeriod } from "@/lib/api";
 import type { Period } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -15,7 +15,7 @@ export function CurrentPeriodCard() {
   useEffect(() => {
     async function fetchPeriod() {
       try {
-        const data = await getCurrentPeriod(); // Assumes a default class
+        const data = await getCurrentPeriod();
         setPeriod(data);
       } catch (error) {
         console.error("Failed to fetch current period:", error);
@@ -31,10 +31,24 @@ export function CurrentPeriodCard() {
         setIsLoading(false);
       }
     }
-    fetchPeriod();
-    // Refresh every minute
-    const interval = setInterval(fetchPeriod, 60000);
-    return () => clearInterval(interval);
+
+    const classId = localStorage.getItem("selectedClass");
+    if(classId){
+        fetchPeriod();
+        const interval = setInterval(fetchPeriod, 60000);
+        return () => clearInterval(interval);
+    } else {
+        setIsLoading(false);
+        setPeriod({
+            subject: "No Class Selected",
+            teacher: "-",
+            time: "-",
+            room: "-",
+            status: "finished",
+            message: "Please select a class first."
+        });
+    }
+
   }, []);
 
   const getStatusInfo = (status?: 'ongoing' | 'break' | 'finished') => {
@@ -67,8 +81,8 @@ export function CurrentPeriodCard() {
       <CardHeader>
         <CardTitle className="font-headline text-lg flex items-center justify-between">
           <span>Current Status</span>
-          <div className="relative">
-             <span className={cn("absolute -inset-1 rounded-full animate-ping", color)}></span>
+           <div className="relative">
+             <span className={cn("absolute -inset-1.5 rounded-full animate-ping", color)}></span>
              <span className={cn("relative inline-flex items-center justify-center h-8 w-8 rounded-full text-lg", color)}>
                 {emoji}
              </span>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronsUpDown, School, Loader2 } from "lucide-react";
+import { School } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -33,7 +33,9 @@ export function ClassSelector() {
           if (savedClass && data.some((c) => c.id === savedClass)) {
             setSelectedClass(savedClass);
           } else {
-            setSelectedClass(data[0].id);
+            const defaultClass = data[0].id;
+            setSelectedClass(defaultClass);
+            localStorage.setItem("selectedClass", defaultClass);
           }
         }
       } catch (error) {
@@ -48,7 +50,6 @@ export function ClassSelector() {
   const handleValueChange = (value: string) => {
     setSelectedClass(value);
     localStorage.setItem("selectedClass", value);
-    // Optional: Reload or notify other components if needed
     window.location.reload();
   };
 
@@ -69,7 +70,7 @@ export function ClassSelector() {
       >
         My Class
       </label>
-      <Select value={selectedClass} onValueChange={handleValueChange}>
+      <Select value={selectedClass} onValueChange={handleValueChange} disabled={classes.length === 0}>
         <SelectTrigger
           id="class-selector"
           className={cn("w-full bg-sidebar-accent border-sidebar-border focus:ring-sidebar-ring", sidebarState === 'collapsed' && 'w-10 h-10 p-2 justify-center')}
@@ -82,11 +83,15 @@ export function ClassSelector() {
 
         </SelectTrigger>
         <SelectContent>
-          {classes.map((c) => (
-            <SelectItem key={c.id} value={c.id}>
-              {c.name}
-            </SelectItem>
-          ))}
+          {classes.length === 0 ? (
+             <SelectItem value="loading" disabled>No classes found</SelectItem>
+          ) : (
+            classes.map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                {c.name}
+              </SelectItem>
+            ))
+          )}
         </SelectContent>
       </Select>
     </div>

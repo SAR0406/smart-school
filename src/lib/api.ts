@@ -1,65 +1,64 @@
 import type { Class, Period, WeekSchedule, SearchResult } from './types';
 
-// Use a relative path for API calls, which will be handled by a Next.js proxy.
 const API_BASE = '/api'; 
-const DEFAULT_CLASS = '10a'; // Default class to use if none is selected
+const DEFAULT_CLASS = '10a';
 
 async function fetchAPI(endpoint: string, params: Record<string, string> = {}) {
-  const url = new URL(`${API_BASE}${endpoint}`, typeof window !== 'undefined' ? window.location.origin : 'http://localhost:9002');
+  const url = new URL(`${API_BASE}${endpoint}`, window.location.origin);
   
-  // Get selected class from localStorage if available
-  const savedClass = typeof window !== 'undefined' ? localStorage.getItem('selectedClass') : null;
-  const classParam = savedClass || params.class || DEFAULT_CLASS;
-  
-  // Add class param to all requests that need it
-  if (!params.class && endpoint !== '/get_all_classes') {
-      params.class = classParam;
+  const savedClass = localStorage.getItem("selectedClass");
+  const classParam = savedClass || params.class;
+
+  if (!classParam && endpoint !== '/get_all_classes') {
+    throw new Error("No class selected");
+  }
+
+  if (classParam && !params.class && endpoint !== '/get_all_classes') {
+    params.class = classParam;
   }
   
   Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
   
   const res = await fetch(url.toString());
   if (!res.ok) {
-    console.error(`API Error: ${res.status} ${res.statusText} for ${url}`);
     const errorBody = await res.text();
-    console.error('Error Body:', errorBody);
-    throw new Error(`Failed to fetch ${endpoint}`);
+    console.error(`API Error: ${res.status} ${res.statusText} for ${url.toString()}`, errorBody);
+    throw new Error(`Failed to fetch ${endpoint}: ${res.statusText}`);
   }
   return res.json();
 }
 
-// /get_all_classes
 export const getAllClasses = async (): Promise<Class[]> => {
   const data = await fetchAPI('/get_all_classes');
-  // The backend returns a list of strings, we need to map it to the Class interface
   return data.classes.map((className: string) => ({
-      id: className.toLowerCase().replace(' ', '-'),
+      id: className.toLowerCase().replace(/\s+/g, '-'),
       name: className
   }));
 };
 
-// /get_current_period
 export const getCurrentPeriod = async (): Promise<Period> => {
   const data = await fetchAPI('/get_current_period');
-  // Map backend response to frontend Period type
-  const { current_subject, message, time } = data;
+  const { current_subject, message, time, next_subject } = data;
   
   let subject = 'Break';
   let status: 'ongoing' | 'break' | 'finished' = 'break';
 
-  if(current_subject){
+  if (current_subject) {
     subject = current_subject;
     status = 'ongoing';
-  } else if (message?.toLowerCase().includes('over') || message?.toLowerCase().includes('enjoy')) {
+  } else if (message?.toLowerCase().includes('over') || message?.toLowerCase().includes('enjoy your holiday')) {
     status = 'finished';
     subject = 'School Day Finished';
+  } else if (next_subject || message?.toLowerCase().includes('next')) {
+     status = 'break';
+     subject = 'Break Time';
   }
   
   return {
     subject: subject,
-    teacher: 'N/A', // Not provided by this endpoint
+    teacher: 'N/A',
     time: time,
-    room: 'N/A', // Not provided by this endpoint
+    room: 'N/A',
     status: status,
     message: message
   };
@@ -67,25 +66,22 @@ export const getCurrentPeriod = async (): Promise<Period> => {
 
 const mapPeriods = (periods: any[]): Period[] => {
     if (!periods || periods.length === 0) return [];
-    // Handle the "Holiday" case
     if (periods[0]?.subject === "Holiday") {
       return [{ subject: "Holiday", time: "All Day", teacher: "-", room: "-" }];
     }
     return periods.map(p => ({
         subject: p.subject,
-        teacher: 'N/A', // Teacher info not in your backend response
+        teacher: 'N/A',
         time: `${p.start_time} - ${p.end_time}`,
-        room: 'N/A' // Room info not in your backend response
+        room: 'N/A'
     }))
 }
 
-// /get_day_schedule
 export const getDaySchedule = async (): Promise<Period[]> => {
   const data = await fetchAPI('/get_day_schedule');
   return mapPeriods(data.timetable);
 };
 
-// /get_full_week
 export const getFullWeekSchedule = async (): Promise<WeekSchedule> => {
     const data = await fetchAPI('/get_full_week');
     const schedule: Partial<WeekSchedule> = {};
@@ -102,14 +98,12 @@ export const getFullWeekSchedule = async (): Promise<WeekSchedule> => {
     return schedule as WeekSchedule;
 }
 
-// /search_periods_by_subject
 export const searchPeriodsBySubject = async (query: string): Promise<SearchResult> => {
     if (!query) return {};
     try {
         const data = await fetchAPI('/search_periods_by_subject', { subject: query });
         const results: SearchResult = {};
         
-        // Group results by day
         data.results.forEach((item: any) => {
             const dayKey = item.day.toLowerCase();
             if (!results[dayKey]) {
@@ -125,11 +119,9 @@ export const searchPeriodsBySubject = async (query: string): Promise<SearchResul
 
         return results;
     } catch(error: any) {
-        // If the API returns 404, it means no results were found. Return empty object.
         if (error.message.includes('404')) {
             return {};
         }
-        // Re-throw other errors
         throw error;
     }
 }

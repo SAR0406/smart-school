@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 
 export function QuizDisplay({ quizData, topic }: { quizData: any[], topic: string }) {
   const [answers, setAnswers] = useState<Record<number, number>>({});
@@ -28,66 +29,77 @@ export function QuizDisplay({ quizData, topic }: { quizData: any[], topic: strin
   }
 
   return (
-    <div className="space-y-4">
-      {submitted ? (
-        <div className="text-center space-y-4 p-4">
-            <h4 className="text-xl font-bold">Quiz Complete!</h4>
-            <p className="text-muted-foreground">You scored</p>
-            <div className="relative w-32 h-32 mx-auto my-4">
-                 <svg className="w-full h-full" viewBox="0 0 100 100">
-                    <circle
-                        className="text-primary/20"
-                        strokeWidth="10"
-                        stroke="currentColor"
-                        fill="transparent"
-                        r="45"
-                        cx="50"
-                        cy="50"
-                    />
-                    <circle
-                        className="text-primary"
-                        strokeWidth="10"
-                        strokeDasharray={2 * Math.PI * 45}
-                        strokeDashoffset={2 * Math.PI * 45 * (1 - score / quizData.length)}
-                        strokeLinecap="round"
-                        stroke="currentColor"
-                        fill="transparent"
-                        r="45"
-                        cx="50"
-                        cy="50"
-                        style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%', transition: 'stroke-dashoffset 0.5s ease-in-out' }}
-                    />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-3xl font-bold">{score}/{quizData.length}</span>
+    <Card className="mt-4">
+        <CardHeader>
+            <CardTitle>Quiz on {topic}</CardTitle>
+            {!submitted && <CardDescription>Answer the questions below.</CardDescription>}
+        </CardHeader>
+        <CardContent>
+            {submitted ? (
+                <div className="text-center space-y-4 p-4">
+                    <h4 className="text-xl font-bold">Quiz Complete!</h4>
+                    <p className="text-muted-foreground">You scored</p>
+                    <div className="relative w-32 h-32 mx-auto my-4">
+                        <svg className="w-full h-full" viewBox="0 0 100 100">
+                            <circle
+                                className="text-primary/20"
+                                strokeWidth="10"
+                                stroke="currentColor"
+                                fill="transparent"
+                                r="45"
+                                cx="50"
+                                cy="50"
+                            />
+                            <circle
+                                className="text-primary"
+                                strokeWidth="10"
+                                strokeDasharray={2 * Math.PI * 45}
+                                strokeDashoffset={2 * Math.PI * 45 * (1 - score / quizData.length)}
+                                strokeLinecap="round"
+                                stroke="currentColor"
+                                fill="transparent"
+                                r="45"
+                                cx="50"
+                                cy="50"
+                                style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%', transition: 'stroke-dashoffset 0.5s ease-in-out' }}
+                            />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-3xl font-bold">{score}/{quizData.length}</span>
+                        </div>
+                    </div>
+                    <Button onClick={handleRestart}>Try Again</Button>
                 </div>
-            </div>
-            <Button onClick={handleRestart}>Try Again</Button>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {quizData.map((q, qIndex) => (
-            <div key={qIndex}>
-              <p className="font-semibold mb-2">{qIndex + 1}. {q.question}</p>
-              <RadioGroup
-                onValueChange={(value) =>
-                  setAnswers((prev) => ({ ...prev, [qIndex]: parseInt(value) }))
-                }
-              >
-                {q.options.map((option: string, oIndex: number) => (
-                  <div key={oIndex} className="flex items-center space-x-2">
-                    <RadioGroupItem value={oIndex.toString()} id={`q${qIndex}o${oIndex}`} />
-                    <Label htmlFor={`q${qIndex}o${oIndex}`}>{option}</Label>
-                  </div>
+            ) : (
+                <div className="space-y-6">
+                {quizData.map((q, qIndex) => (
+                    <div key={qIndex}>
+                    <p className="font-semibold mb-2">{qIndex + 1}. {q.question}</p>
+                    <RadioGroup
+                        onValueChange={(value) =>
+                        setAnswers((prev) => ({ ...prev, [qIndex]: parseInt(value) }))
+                        }
+                    >
+                        {q.options.map((option: string, oIndex: number) => (
+                        <div key={oIndex} className="flex items-center space-x-2">
+                            <RadioGroupItem value={oIndex.toString()} id={`q${qIndex}o${oIndex}`} />
+                            <Label htmlFor={`q${qIndex}o${oIndex}`}>{option}</Label>
+                        </div>
+                        ))}
+                    </RadioGroup>
+                    </div>
                 ))}
-              </RadioGroup>
-            </div>
-          ))}
-          <Button onClick={handleSubmit} disabled={Object.keys(answers).length !== quizData.length}>
-            Submit Quiz
-          </Button>
-        </div>
-      )}
-    </div>
+                
+                </div>
+            )}
+        </CardContent>
+        {!submitted && (
+             <CardFooter>
+                <Button onClick={handleSubmit} disabled={Object.keys(answers).length !== quizData.length}>
+                    Submit Quiz
+                </Button>
+            </CardFooter>
+        )}
+    </Card>
   );
 }

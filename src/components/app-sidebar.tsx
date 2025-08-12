@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Bot, GraduationCap, LayoutDashboard, Database, HelpCircle, BookOpen, FileText, Code } from "lucide-react";
+import { Bot, GraduationCap, LayoutDashboard } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -10,29 +10,16 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem
 } from "@/components/ui/sidebar";
 import { ClassSelector } from "@/components/class-selector";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
-import React from "react";
 
 const menuItems = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/ai", label: "AI Assistant", icon: Bot },
 ];
 
-const googleAiTools = [
-  { href: "/google-ai/quiz-generator", label: "Quiz Generator", icon: HelpCircle },
-  { href: "/google-ai/notes-generator", label: "Notes Generator", icon: BookOpen },
-  { href: "/google-ai/summarizer", label: "Summarizer", icon: FileText },
-  { href: "/google-ai/coding-helper", label: "Coding Helper", icon: Code },
-];
-
 export function AppSidebar() {
   const pathname = usePathname();
-  const [isAiMenuOpen, setIsAiMenuOpen] = React.useState(pathname.startsWith('/google-ai'));
 
   return (
     <Sidebar side="left" variant="sidebar" collapsible="icon" className="group">
@@ -58,30 +45,6 @@ export function AppSidebar() {
                         </Link>
                     </SidebarMenuItem>
                 ))}
-                 <Collapsible open={isAiMenuOpen} onOpenChange={setIsAiMenuOpen}>
-                    <SidebarMenuItem>
-                        <CollapsibleTrigger asChild>
-                             <SidebarMenuButton tooltip="Google AI">
-                                <Database />
-                                <span>Google AI</span>
-                            </SidebarMenuButton>
-                        </CollapsibleTrigger>
-                    </SidebarMenuItem>
-                    <CollapsibleContent asChild>
-                        <SidebarMenuSub>
-                            {googleAiTools.map((item) => (
-                                 <SidebarMenuSubItem key={item.href}>
-                                     <Link href={item.href} className="w-full">
-                                        <SidebarMenuSubButton isActive={pathname === item.href}>
-                                            <item.icon />
-                                            <span>{item.label}</span>
-                                        </SidebarMenuSubButton>
-                                     </Link>
-                                 </SidebarMenuSubItem>
-                            ))}
-                        </SidebarMenuSub>
-                    </CollapsibleContent>
-                 </Collapsible>
             </SidebarMenu>
         </div>
       </SidebarContent>

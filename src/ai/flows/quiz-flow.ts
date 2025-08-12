@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A Genkit flow for generating quizzes.
@@ -12,7 +13,7 @@ const QuizQuestionSchema = z.object({
 });
 
 const QuizOutputSchema = z.object({
-  quiz: z.array(QuizQuestionSchema).length(5).describe('An array of 5 quiz questions.'),
+  quiz: z.array(QuizQuestionSchema).length(5).describe('An array of 5 quiz questions in a structured JSON format.'),
 });
 export type QuizOutput = z.infer<typeof QuizOutputSchema>;
 
@@ -21,7 +22,7 @@ const quizPrompt = ai.definePrompt({
     name: 'quizPrompt',
     input: { schema: z.string() },
     output: { schema: QuizOutputSchema },
-    prompt: `Generate a 5-question multiple-choice quiz on the topic "{{input}}".`,
+    prompt: `Generate a 5-question multiple-choice quiz on the topic "{{input}}". Ensure the output is a valid JSON object matching the requested schema.`,
 });
 
 
