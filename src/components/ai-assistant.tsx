@@ -45,6 +45,7 @@ import { generateNotes } from "@/ai/flows/notes-flow";
 import { summarizeText } from "@/ai/flows/summarize-flow";
 import { helpWithCode } from "@/ai/flows/code-helper-flow";
 import { QuizDisplay } from "./quiz-display";
+import React from 'react';
 
 type Message = {
   id: string;
@@ -176,8 +177,7 @@ export function AIAssistant() {
         } else {
            localStorage.removeItem("schoolzen-chat");
         }
-
-    } catch (e) => {
+    } catch (e) {
         console.error("Could not save messages to localStorage", e);
     }
     

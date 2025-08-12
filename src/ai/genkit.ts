@@ -14,7 +14,7 @@ export const ai = genkit({
   ],
   // Log to the console in a structured format.
   logSinks: [
-    (log) => {
+    async (log) => {
       if (process.env.NODE_ENV === 'development') {
         console.log(log);
       }
