@@ -22,11 +22,26 @@ import { getDaySchedule } from "@/lib/api";
 import type { Period } from "@/lib/types";
 import { FullWeekSchedule } from "./full-week-schedule";
 
+const LoadingSkeleton = () => (
+    <div className="space-y-2">
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-full" />
+    </div>
+);
+
 export function TodayScheduleCard() {
   const [schedule, setSchedule] = useState<Period[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
     async function fetchSchedule() {
       try {
         const data = await getDaySchedule();
@@ -39,6 +54,29 @@ export function TodayScheduleCard() {
     }
     fetchSchedule();
   }, []);
+  
+  if (!isMounted) {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="font-headline text-lg flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-primary" />
+                Today's Schedule
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
+                <LoadingSkeleton />
+            </CardContent>
+            <CardFooter className="flex justify-end">
+                 <Button variant="outline" disabled>
+                    View Full Week
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+            </CardFooter>
+        </Card>
+    )
+  }
+
 
   return (
     <Card>
@@ -50,14 +88,7 @@ export function TodayScheduleCard() {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-            <div className="space-y-2">
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-8 w-full" />
-            </div>
+            <LoadingSkeleton />
         ) : schedule.length > 0 ? (
           <Table>
             <TableHeader>
