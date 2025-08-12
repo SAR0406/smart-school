@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BookOpen, Clock, Loader2, MessageSquare, User } from "lucide-react";
 import { getCurrentPeriod } from "@/lib/api";
 import type { Period } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 export function CurrentPeriodCard() {
   const [period, setPeriod] = useState<Period | null>(null);
@@ -36,18 +37,18 @@ export function CurrentPeriodCard() {
     return () => clearInterval(interval);
   }, []);
 
-  const getStatusEmoji = (status?: 'ongoing' | 'break' | 'finished') => {
+  const getStatusInfo = (status?: 'ongoing' | 'break' | 'finished') => {
     switch (status) {
-      case 'ongoing': return '📖';
-      case 'break': return '☕';
-      case 'finished': return '✅';
-      default: return '…';
+      case 'ongoing': return { emoji: '📖', color: 'bg-green-500' };
+      case 'break': return { emoji: '☕', color: 'bg-yellow-500' };
+      case 'finished': return { emoji: '✅', color: 'bg-blue-500' };
+      default: return { emoji: '…', color: 'bg-gray-500' };
     }
   }
 
   if (isLoading) {
     return (
-      <Card>
+      <Card className="transition-all hover:shadow-lg hover:shadow-primary/20">
         <CardHeader>
           <Skeleton className="h-6 w-3/4" />
         </CardHeader>
@@ -59,12 +60,19 @@ export function CurrentPeriodCard() {
     );
   }
 
+  const { emoji, color } = getStatusInfo(period?.status);
+
   return (
-    <Card>
+    <Card className="transition-all hover:shadow-lg hover:shadow-primary/20">
       <CardHeader>
         <CardTitle className="font-headline text-lg flex items-center justify-between">
           <span>Current Status</span>
-          <span className="text-2xl">{getStatusEmoji(period?.status)}</span>
+          <div className="relative">
+             <span className={cn("absolute -inset-1 rounded-full animate-ping", color)}></span>
+             <span className={cn("relative inline-flex items-center justify-center h-8 w-8 rounded-full text-lg", color)}>
+                {emoji}
+             </span>
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">

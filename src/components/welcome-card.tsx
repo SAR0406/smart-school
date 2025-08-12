@@ -22,20 +22,20 @@ export function WelcomeCard() {
 
   if (!isMounted) {
     return (
-        <Card>
+        <Card className="bg-gradient-to-br from-primary/80 to-primary text-primary-foreground">
             <CardHeader>
-                <Skeleton className="h-8 w-1/2" />
-                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-8 w-1/2 bg-white/30" />
+                <Skeleton className="h-4 w-3/4 bg-white/30" />
             </CardHeader>
         </Card>
     )
   }
 
   return (
-    <Card>
+    <Card className="bg-gradient-to-br from-primary/80 to-primary text-primary-foreground transition-all hover:shadow-lg hover:shadow-primary/40">
       <CardHeader>
-        <CardTitle className="text-2xl font-bold">{greeting}</CardTitle>
-        <CardDescription>Here's what's happening with your schedule today.</CardDescription>
+        <CardTitle className="text-3xl font-bold">{greeting}</CardTitle>
+        <CardDescription className="text-primary-foreground/80">Here's what's happening with your schedule today.</CardDescription>
       </CardHeader>
     </Card>
   );
