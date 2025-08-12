@@ -3,33 +3,22 @@
 import { useState, useEffect, useRef, type FormEvent } from "react";
 import {
   Bot,
-  BrainCircuit,
-  ClipboardCheck,
-  Code,
-  FileText,
-  HelpCircle,
   Loader2,
-  Quote,
   Send,
-  Sparkles,
-  BookOpen,
   Mic,
   Trash2,
+  BrainCircuit,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "./ui/card";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Tooltip,
   TooltipContent,
@@ -39,68 +28,47 @@ import {
 import ReactMarkdown from 'react-markdown';
 import { QuizDisplay } from "./quiz-display";
 
+// API and Flow Imports
+import { getNvidiaAIResponse } from "@/lib/api";
+import { helpWithCode } from "@/ai/flows/code-helper-flow";
+import { generateNotes } from "@/ai/flows/notes-flow";
+import { generateQuiz } from "@/ai/flows/quiz-flow";
+import { summarizeText } from "@/ai/flows/summarize-flow";
+import { chat } from "@/ai/flows/chat-flow";
+import { defineTerm } from "@/ai/flows/define-flow";
+import { explainConcept } from "@/ai/flows/explain-flow";
+
 type Message = {
   id: string;
   role: "user" | "assistant";
   content: string | React.ReactNode;
-  tool?: Tool;
+  tool?: string;
+  model?: AIModel;
 };
 
-type Tool =
-  | "chat"
-  | "jarvis"
-  | "explain"
-  | "define"
-  | "code"
-  | "summary"
-  | "notes"
-  | "feedback"
-  | "quiz";
+type AIModel = "nvidia" | "gemini";
+type AITool = "chat" | "explain" | "define" | "code" | "summary" | "notes" | "quiz";
 
-const toolConfig = {
-  chat: { icon: Sparkles, name: "Chat", endpoint: "/api/ai/chat" },
-  jarvis: { icon: BrainCircuit, name: "Jarvis", endpoint: "/api/ai/myai" },
-  explain: { icon: HelpCircle, name: "Explain", endpoint: "/api/ai/explain" },
-  define: { icon: BookOpen, name: "Define", endpoint: "/api/ai/define" },
-  code: { icon: Code, name: "Code", endpoint: "/api/ai/code" },
-  summary: { icon: FileText, name: "Summary", endpoint: "/api/ai/summary" },
-  notes: { icon: FileText, name: "Notes", endpoint: "/api/ai/notes" },
-  feedback: { icon: ClipboardCheck, name: "Feedback", endpoint: "/api/ai/feedback" },
-  quiz: { icon: Quote, name: "Quiz", endpoint: "/api/ai/quiz" },
-};
-
-async function getAIResponse(tool: Tool, prompt: string, streamCallback: (chunk: string) => void) {
-  const config = toolConfig[tool];
-  if (!config.endpoint) {
-    throw new Error(`Endpoint for tool ${tool} is not defined.`);
-  }
-
-  const response = await fetch(config.endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt, stream: true })
-  });
-  
-  if (!response.ok || !response.body) {
-    const errorBody = await response.text();
-    console.error("API Error:", errorBody);
-    throw new Error(`API request failed with status ${response.status}`);
-  }
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    const chunk = decoder.decode(value);
-    streamCallback(chunk);
-  }
+interface ChatInterfaceProps {
+    tool: AITool;
+    welcomeMessage: { title: string; message: string };
+    promptPlaceholder?: string;
 }
 
-export function AIAssistant() {
+const geminiFlows = {
+    chat: chat,
+    explain: explainConcept,
+    define: defineTerm,
+    code: helpWithCode,
+    summary: summarizeText,
+    notes: generateNotes,
+    quiz: generateQuiz
+}
+
+export function ChatInterface({ tool, welcomeMessage, promptPlaceholder }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [tool, setTool] = useState<Tool>("chat");
+  const [model, setModel] = useState<AIModel>("nvidia");
   const [isLoading, setIsLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -108,19 +76,20 @@ export function AIAssistant() {
   const recognitionRef = useRef<any>(null);
   const { toast } = useToast();
 
+  const storageKey = `schoolzen-chat-${tool}`;
+
   useEffect(() => {
     setIsMounted(true);
     try {
-        const storedMessages = localStorage.getItem("schoolzen-chat");
+        const storedMessages = localStorage.getItem(storageKey);
         if (storedMessages) {
           const parsed = JSON.parse(storedMessages);
-          // Make sure content is not an object before setting
-          const validMessages = parsed.filter((m: Message) => typeof m.content === 'string');
+          const validMessages = parsed.filter((m: Message) => typeof m.content === 'string' || (typeof m.content === 'object' && m.content !== null));
           setMessages(validMessages);
         }
     } catch (e) {
         console.error("Could not load messages from localStorage", e);
-        localStorage.removeItem("schoolzen-chat");
+        localStorage.removeItem(storageKey);
     }
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -132,7 +101,7 @@ export function AIAssistant() {
       recognitionRef.current.onstart = () => setIsListening(true);
       recognitionRef.current.onend = () => setIsListening(false);
       recognitionRef.current.onresult = (event: any) => {
-        setInput(event.results[0][0].transcript);
+        setInput(prev => prev + event.results[0][0].transcript);
         setIsListening(false);
       };
       recognitionRef.current.onerror = (event: any) => {
@@ -140,23 +109,30 @@ export function AIAssistant() {
         setIsListening(false);
       }
     }
-  }, [toast]);
+  }, [toast, storageKey]);
 
   useEffect(() => {
     if(!isMounted) return;
     try {
-       localStorage.setItem("schoolzen-chat", JSON.stringify(messages));
+       const messagesToStore = messages.map(m => {
+           if (typeof m.content !== 'string') {
+               // Don't store complex React nodes
+               return {...m, content: 'Message content cannot be stored.'}
+           }
+           return m;
+       });
+       localStorage.setItem(storageKey, JSON.stringify(messagesToStore));
     } catch (e) {
         console.error("Could not save messages to localStorage", e);
     }
     if (scrollAreaRef.current) {
       scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
     }
-  }, [messages, isMounted]);
+  }, [messages, isMounted, storageKey]);
 
   const handleClearChat = () => {
     setMessages([]);
-    localStorage.removeItem("schoolzen-chat");
+    localStorage.removeItem(storageKey);
     toast({ title: "Chat Cleared" });
   }
 
@@ -167,12 +143,12 @@ export function AIAssistant() {
       recognitionRef.current?.start();
     }
   };
-
+  
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    const userMessage: Message = { id: Date.now().toString(), role: "user", content: input, tool: tool };
+    const userMessage: Message = { id: Date.now().toString(), role: "user", content: input, model: model };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
@@ -181,13 +157,31 @@ export function AIAssistant() {
     setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "" }]);
 
     try {
-      await getAIResponse(tool, input, (chunk) => {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === assistantId ? { ...msg, content: (msg.content as string) + chunk } : msg
-          )
-        );
-      });
+      if (model === 'nvidia') {
+        await getNvidiaAIResponse(tool, input, (chunk) => {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === assistantId ? { ...msg, content: (msg.content as string) + chunk, model: 'nvidia' } : msg
+            )
+          );
+        });
+      } else { // Gemini
+        const flow = geminiFlows[tool];
+        if (!flow) throw new Error(`Gemini flow for tool '${tool}' not found.`);
+        const result = await flow(input);
+        
+        let content: string | React.ReactNode = '';
+        if ('response' in result) content = result.response;
+        else if ('summary' in result) content = result.summary;
+        else if ('notes' in result) content = result.notes;
+        else if ('quiz' in result) {
+            content = <QuizDisplay quizData={result.quiz} topic={input} />;
+        } else {
+            content = "Unsupported response format from Gemini.";
+        }
+        
+        setMessages(prev => prev.map(msg => msg.id === assistantId ? {...msg, content: content, model: 'gemini'} : msg));
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
       setMessages((prev) =>
@@ -201,6 +195,24 @@ export function AIAssistant() {
     }
   };
 
+  const renderMessageContent = (message: Message) => {
+    if (typeof message.content !== 'string') {
+      return message.content;
+    }
+     if (tool === 'quiz' && (message.content.includes('{') || message.model === 'gemini')) {
+      try {
+        const jsonString = message.content.substring(message.content.indexOf('{'), message.content.lastIndexOf('}') + 1);
+        const quizData = JSON.parse(jsonString);
+        if (quizData.quiz) {
+            return <QuizDisplay quizData={quizData.quiz} topic="Quiz" />;
+        }
+      } catch (e) {
+        // Not valid JSON, fall back to markdown
+      }
+    }
+    return <ReactMarkdown className="prose dark:prose-invert max-w-full">{message.content}</ReactMarkdown>;
+  };
+
   if (!isMounted) {
     return (
         <Card className="h-full flex flex-col items-center justify-center">
@@ -209,56 +221,34 @@ export function AIAssistant() {
     );
   }
 
-  const renderMessageContent = (message: Message) => {
-    if (typeof message.content !== 'string') {
-      return message.content;
-    }
-    // For quiz tool, try to parse JSON and render QuizDisplay
-    if (message.tool === 'quiz' && message.content.includes('{')) {
-      try {
-        const jsonString = message.content.substring(message.content.indexOf('{'), message.content.lastIndexOf('}') + 1);
-        const quizData = JSON.parse(jsonString);
-        return <QuizDisplay quizData={quizData.quiz} topic="Quiz" />;
-      } catch (e) {
-        // Not valid JSON, fall back to markdown
-      }
-    }
-    return <ReactMarkdown>{message.content}</ReactMarkdown>;
-  };
-
   return (
     <TooltipProvider>
       <Card className="h-full flex flex-col rounded-lg shadow-lg">
         <CardHeader className="flex flex-row items-center justify-between border-b gap-2">
-          <CardTitle className="font-headline text-primary flex items-center gap-2">
-            <Bot /> AI Assistant
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={handleClearChat} disabled={messages.length === 0}>
-                        <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Clear Chat</span>
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent><p>Clear Chat</p></TooltipContent>
-            </Tooltip>
-            
-            <Select value={tool} onValueChange={(v) => setTool(v as Tool)}>
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Select tool" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(toolConfig).map(([key, { icon: Icon, name }]) => (
-                  <SelectItem key={key} value={key}>
-                    <div className="flex items-center gap-2">
-                      <Icon className="h-4 w-4" /> {name}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+           <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="model-switch" className="flex items-center gap-1.5 text-sm font-medium">
+                <BrainCircuit className="h-5 w-5 text-gray-400" /> NVIDIA
+              </Label>
+              <Switch
+                id="model-switch"
+                checked={model === 'gemini'}
+                onCheckedChange={(checked) => setModel(checked ? 'gemini' : 'nvidia')}
+              />
+              <Label htmlFor="model-switch" className="flex items-center gap-1.5 text-sm font-medium">
+                <Sparkles className="h-5 w-5 text-yellow-400" /> Gemini
+              </Label>
+            </div>
           </div>
+          <Tooltip>
+              <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={handleClearChat} disabled={messages.length === 0}>
+                      <Trash2 className="h-4 w-4" />
+                      <span className="sr-only">Clear Chat</span>
+                  </Button>
+              </TooltipTrigger>
+              <TooltipContent><p>Clear Chat</p></TooltipContent>
+          </Tooltip>
         </CardHeader>
         <CardContent className="flex-grow overflow-hidden p-4 md:p-6">
           <ScrollArea className="h-full pr-4" ref={scrollAreaRef}>
@@ -266,16 +256,20 @@ export function AIAssistant() {
                {messages.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
                         <Bot className="h-12 w-12 mb-4" />
-                        <p className="text-lg font-semibold">Welcome to the AI Assistant</p>
-                        <p>Ask me anything about your studies!</p>
+                        <p className="text-lg font-semibold">{welcomeMessage.title}</p>
+                        <p>{welcomeMessage.message}</p>
                     </div>
                 )}
               {messages.map((message) => (
                 <div key={message.id} className={cn("flex items-start gap-3", message.role === "user" ? "justify-end" : "justify-start")}>
                   {message.role === "assistant" && (
-                    <Avatar className="h-8 w-8"><AvatarFallback className="bg-primary text-primary-foreground"><Bot /></AvatarFallback></Avatar>
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className={cn("bg-primary text-primary-foreground", message.model === 'gemini' && 'bg-yellow-500')}>
+                        {message.model === 'gemini' ? <Sparkles/> : <Bot />}
+                      </AvatarFallback>
+                    </Avatar>
                   )}
-                  <div className={cn("max-w-[80%] rounded-xl p-3 text-sm prose dark:prose-invert max-w-full", message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted")}>
+                  <div className={cn("max-w-[80%] rounded-xl p-3 text-sm", message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted")}>
                     {isLoading && message.content === "" ? <Loader2 className="h-5 w-5 animate-spin" /> : renderMessageContent(message)}
                   </div>
                   {message.role === "user" && (
@@ -291,7 +285,7 @@ export function AIAssistant() {
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={isListening ? "Listening..." : `Message your AI assistant...`}
+              placeholder={isListening ? "Listening..." : promptPlaceholder || 'Message your AI assistant...'}
               className="flex-grow resize-none"
               rows={1}
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { handleSubmit(e); } }}
@@ -301,7 +295,7 @@ export function AIAssistant() {
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button type="button" size="icon" variant="ghost" onClick={handleVoiceInput} disabled={isLoading}>
-                            <Mic className={cn(isListening && 'text-primary animate-pulse')} />
+                            <Mic className={cn("h-5 w-5", isListening && 'text-primary animate-pulse')} />
                             <span className="sr-only">Use Microphone</span>
                         </Button>
                     </TooltipTrigger>

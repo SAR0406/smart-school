@@ -1,19 +1,18 @@
 import type { Class, Period, WeekSchedule, SearchResult } from './types';
 
-const API_BASE = '/api'; 
-const DEFAULT_CLASS = '10a';
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://smart-school-ai-backend.onrender.com';
 
 async function fetchAPI(endpoint: string, params: Record<string, string> = {}) {
-  const url = new URL(`${API_BASE}${endpoint}`, window.location.origin);
+  const url = new URL(`${API_BASE}${endpoint}`);
   
-  const savedClass = localStorage.getItem("selectedClass");
+  const savedClass = typeof window !== 'undefined' ? localStorage.getItem("selectedClass") : null;
   const classParam = savedClass || params.class;
 
-  if (!classParam && endpoint !== '/get_all_classes') {
+  if (!classParam && !endpoint.includes('/get_all_classes')) {
     throw new Error("No class selected");
   }
 
-  if (classParam && !params.class && endpoint !== '/get_all_classes') {
+  if (classParam && !params.class && !endpoint.includes('/get_all_classes')) {
     params.class = classParam;
   }
   
@@ -25,6 +24,11 @@ async function fetchAPI(endpoint: string, params: Record<string, string> = {}) {
     console.error(`API Error: ${res.status} ${res.statusText} for ${url.toString()}`, errorBody);
     throw new Error(`Failed to fetch ${endpoint}: ${res.statusText}`);
   }
+  
+  if (endpoint.startsWith('/ai/')) {
+      return res; // Return full response for potential streaming
+  }
+
   return res.json();
 }
 
@@ -46,7 +50,7 @@ export const getCurrentPeriod = async (): Promise<Period> => {
   if (current_subject) {
     subject = current_subject;
     status = 'ongoing';
-  } else if (message?.toLowerCase().includes('over') || message?.toLowerCase().includes('enjoy your holiday')) {
+  } else if (message?.toLowerCase().includes('over') || message?.toLowerCase().includes('enjoy your holiday') || message?.toLowerCase().includes('sunday')) {
     status = 'finished';
     subject = 'School Day Finished';
   } else if (next_subject || message?.toLowerCase().includes('next')) {
@@ -124,4 +128,27 @@ export const searchPeriodsBySubject = async (query: string): Promise<SearchResul
         }
         throw error;
     }
+}
+
+export const getNvidiaAIResponse = async (tool: string, prompt: string, streamCallback: (chunk: string) => void) => {
+  const response = await fetch(`${API_BASE}/ai/${tool}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt, stream: true })
+  });
+  
+  if (!response.ok || !response.body) {
+    const errorBody = await response.text();
+    console.error("NVIDIA API Error:", errorBody);
+    throw new Error(`API request failed with status ${response.status}`);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    const chunk = decoder.decode(value);
+    streamCallback(chunk);
+  }
 }

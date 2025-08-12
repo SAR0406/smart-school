@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Bot, GraduationCap, LayoutDashboard } from "lucide-react";
+import { Bot, GraduationCap, LayoutDashboard, MessageSquare } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -15,7 +15,8 @@ import { ClassSelector } from "@/components/class-selector";
 
 const menuItems = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/ai", label: "AI Assistant", icon: Bot },
+    { href: "/ai/chat", label: "AI Chat", icon: MessageSquare },
+    { href: "/ai", label: "AI Tools", icon: Bot },
 ];
 
 export function AppSidebar() {
@@ -38,7 +39,7 @@ export function AppSidebar() {
                 {menuItems.map((item) => (
                     <SidebarMenuItem key={item.href}>
                          <Link href={item.href} className="w-full">
-                            <SidebarMenuButton isActive={pathname === item.href} tooltip={item.label}>
+                            <SidebarMenuButton isActive={pathname.startsWith(item.href) && (item.href !== '/' || pathname === '/')} tooltip={item.label}>
                                 <item.icon />
                                 <span>{item.label}</span>
                             </SidebarMenuButton>
