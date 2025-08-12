@@ -25,19 +25,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-
-// AI Flow Imports
-import { studentAiAssistant } from "@/ai/flows/student-ai-assistant";
-import { generateQuiz } from "@/ai/flows/generate-quiz";
-import { summarizeContent } from "@/ai/flows/summarize-content";
-import { provideConstructiveFeedback } from "@/ai/flows/provide-constructive-feedback";
-import { generateDetailedStudyNotes } from "@/ai/flows/generate-detailed-study-notes";
 
 type Message = {
   id: string;
@@ -58,16 +51,31 @@ type Tool =
   | "quiz";
 
 const toolConfig = {
-  chat: { icon: Sparkles, name: "Chat" },
-  jarvis: { icon: BrainCircuit, name: "Jarvis" },
-  explain: { icon: HelpCircle, name: "Explain" },
-  define: { icon: BookOpen, name: "Define" },
-  code: { icon: Code, name: "Code" },
-  summary: { icon: FileText, name: "Summary" },
-  notes: { icon: FileText, name: "Notes" },
-  feedback: { icon: ClipboardCheck, name: "Feedback" },
-  quiz: { icon: Quote, name: "Quiz" },
+  chat: { icon: Sparkles, name: "Chat", endpoint: "/api/ai/chat" },
+  jarvis: { icon: BrainCircuit, name: "Jarvis", endpoint: "/api/ai/myai" },
+  explain: { icon: HelpCircle, name: "Explain", endpoint: "/api/ai/explain" },
+  define: { icon: BookOpen, name: "Define", endpoint: "/api/ai/define" },
+  code: { icon: Code, name: "Code", endpoint: "/api/ai/code" },
+  summary: { icon: FileText, name: "Summary", endpoint: "/api/ai/summary" },
+  notes: { icon: FileText, name: "Notes", endpoint: "/api/ai/notes" },
+  feedback: { icon: ClipboardCheck, name: "Feedback", endpoint: "/api/ai/feedback" },
+  quiz: { icon: Quote, name: "Quiz", endpoint: "/api/ai/quiz" },
 };
+
+async function getAIResponse(tool: Tool, prompt: string) {
+    const config = toolConfig[tool];
+    const response = await fetch(config.endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, stream: false })
+    });
+    if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+    }
+    const data = await response.json();
+    return data.response;
+}
+
 
 export function AIAssistant() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -80,12 +88,18 @@ export function AIAssistant() {
   useEffect(() => {
     const storedMessages = localStorage.getItem("schoolzen-chat");
     if (storedMessages) {
-      setMessages(JSON.parse(storedMessages));
+      // Temporarily disable loading from localStorage to avoid rendering complex components
+      // setMessages(JSON.parse(storedMessages));
     }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("schoolzen-chat", JSON.stringify(messages));
+    // Only store string messages to avoid serialization issues with React components
+    const storableMessages = messages.map(msg => 
+        typeof msg.content !== 'string' ? { ...msg, content: `[${msg.tool} output]` } : msg
+    );
+    localStorage.setItem("schoolzen-chat", JSON.stringify(storableMessages));
+
     if (scrollAreaRef.current) {
       scrollAreaRef.current.scrollTo({
         top: scrollAreaRef.current.scrollHeight,
@@ -108,59 +122,42 @@ export function AIAssistant() {
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
+    
+    // Add a loading message
+    const loadingMessageId = (Date.now() + 1).toString();
+    const loadingMessage: Message = {
+        id: loadingMessageId,
+        role: "assistant",
+        content: <Loader2 className="h-5 w-5 animate-spin" />,
+    };
+    setMessages((prev) => [...prev, loadingMessage]);
 
     try {
-      let response: React.ReactNode;
+      let responseContent: React.ReactNode;
+      const responseText = await getAIResponse(tool, input);
 
-      switch (tool) {
-        case "chat":
-        case "jarvis":
-        case "explain":
-        case "define":
-        case "code":
-          const assistantResponse = await studentAiAssistant({
-            mode: tool,
-            inputText: input,
-          });
-          response = assistantResponse.response;
-          break;
-        case "summary":
-          const summaryResponse = await summarizeContent({ content: input });
-          response = summaryResponse.summary;
-          break;
-
-        case "notes":
-          const [subject, topic] = input.split(/ for | on /i).slice(-2);
-          if (!subject || !topic) {
-            response = "Please provide both a subject and a topic (e.g., 'History for The Cold War').";
-          } else {
-             const notesResponse = await generateDetailedStudyNotes({ subject, topic, desiredLength: 'detailed' });
-             response = notesResponse.studyNotes;
-          }
-          break;
-
-        case "feedback":
-          const feedbackResponse = await provideConstructiveFeedback({ text: input });
-          response = feedbackResponse.feedback;
-          break;
-        case "quiz":
-          const [numQuestionsStr, ...topicParts] = input.split(' ');
-          const numQuestions = parseInt(numQuestionsStr, 10) || 5;
-          const quizTopic = topicParts.join(' ').replace(/^questions? on/i, '').trim() || 'general knowledge';
-          const quizResponse = await generateQuiz({ topic: quizTopic, numQuestions });
-          const quizData = JSON.parse(quizResponse.quiz);
-          response = <QuizDisplay quizData={quizData.quiz} topic={quizTopic} />;
-          break;
-        default:
-            response = "Sorry, I can't do that yet.";
+      if (tool === 'quiz') {
+        // Attempt to parse quiz from a more flexible format
+        try {
+            const quizData = parseQuiz(responseText);
+            const topicMatch = input.match(/on (.*)/i);
+            const topic = topicMatch ? topicMatch[1] : 'the topic';
+            responseContent = <QuizDisplay quizData={quizData} topic={topic} />;
+        } catch(e) {
+            console.error("Failed to parse quiz:", e);
+            responseContent = "I tried to make a quiz, but something went wrong with the format. Here's the raw text:\n\n" + responseText;
+        }
+      } else {
+        responseContent = responseText;
       }
       
       const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
+        id: loadingMessageId, // Replace the loading message
         role: "assistant",
-        content: response,
+        content: responseContent,
       };
-      setMessages((prev) => [...prev, assistantMessage]);
+      setMessages((prev) => prev.map(m => m.id === loadingMessageId ? assistantMessage : m));
+
     } catch (error) {
       console.error("AI Assistant Error:", error);
       toast({
@@ -169,11 +166,11 @@ export function AIAssistant() {
         description: "There was a problem with the AI assistant.",
       });
       const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
+        id: loadingMessageId, // Replace the loading message
         role: "assistant",
         content: "I'm sorry, I encountered an error. Please try again.",
       };
-      setMessages((prev) => [...prev, errorMessage]);
+      setMessages((prev) => prev.map(m => m.id === loadingMessageId ? errorMessage : m));
     } finally {
       setIsLoading(false);
     }
@@ -235,18 +232,6 @@ export function AIAssistant() {
                 )}
               </div>
             ))}
-             {isLoading && (
-              <div className="flex items-start gap-3 justify-start">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-primary text-primary-foreground">
-                      <Bot />
-                    </AvatarFallback>
-                  </Avatar>
-                   <div className="bg-muted rounded-xl p-3">
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                   </div>
-              </div>
-            )}
           </div>
         </ScrollArea>
       </CardContent>
@@ -271,6 +256,50 @@ export function AIAssistant() {
       </CardFooter>
     </Card>
   );
+}
+
+// More robust quiz parser
+function parseQuiz(text: string): any[] {
+    const questions = [];
+    const questionBlocks = text.split(/\n\s*\d+\.\s/g).filter(Boolean);
+
+    for (const block of questionBlocks) {
+        const lines = block.trim().split('\n');
+        if (lines.length < 2) continue;
+
+        const question = lines[0].trim();
+        const options = [];
+        let correctAnswerIndex = -1;
+
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            const optionMatch = line.match(/^[a-d]\)\s*(.*)/i);
+            if (optionMatch) {
+                const optionText = optionMatch[1].trim();
+                if (optionText.includes("(Correct)")) {
+                    correctAnswerIndex = options.length;
+                    options.push(optionText.replace(/\(Correct\)/i, '').trim());
+                } else {
+                    options.push(optionText);
+                }
+            } else {
+                 const answerMatch = line.match(/Answer:\s*[a-d]\)/i);
+                 if (answerMatch) {
+                     correctAnswerIndex = answerMatch[0].toLowerCase().charCodeAt(answerMatch[0].length - 2) - 97; // 'a' -> 0
+                 }
+            }
+        }
+        
+        if (question && options.length > 1 && correctAnswerIndex !== -1) {
+            questions.push({ question, options, correctAnswerIndex });
+        }
+    }
+
+    if (questions.length === 0) {
+        throw new Error("Could not parse any questions from the text.");
+    }
+
+    return questions;
 }
 
 

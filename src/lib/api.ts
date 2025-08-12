@@ -1,89 +1,108 @@
 import type { Class, Period, WeekSchedule, SearchResult } from './types';
 
-const mockDelay = (ms: number) => new Promise(res => setTimeout(res, ms));
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
+const DEFAULT_CLASS = '10a'; // Default class to use if none is selected
 
-const mockClasses: Class[] = [
-  { id: '10a', name: 'Class 10-A' },
-  { id: '10b', name: 'Class 10-B' },
-  { id: '11a', name: 'Class 11-A' },
-  { id: '11b', name: 'Class 11-B' },
-];
-
-const mockPeriods: Period[] = [
-  { subject: 'Mathematics', teacher: 'Mr. John Doe', time: '08:00 - 09:00', room: '101' },
-  { subject: 'Physics', teacher: 'Ms. Ada Lovelace', time: '09:00 - 10:00', room: '203' },
-  { subject: 'History', teacher: 'Mr. Indiana Jones', time: '10:00 - 11:00', room: '105' },
-  { subject: 'Lunch Break', teacher: '', time: '11:00 - 12:00', room: 'Cafeteria' },
-  { subject: 'Chemistry', teacher: 'Ms. Marie Curie', time: '12:00 - 13:00', room: 'Lab A' },
-  { subject: 'English Literature', teacher: 'Mr. William Shakespeare', time: '13:00 - 14:00', room: '202' },
-  { subject: 'Physical Education', teacher: 'Mr. Rocky Balboa', time: '14:00 - 15:00', room: 'Gym' },
-];
-
-const mockFullWeek: WeekSchedule = {
-  monday: mockPeriods.slice(0, 5),
-  tuesday: mockPeriods.slice(1, 6),
-  wednesday: [...mockPeriods.slice(0,2), { subject: 'Computer Science', teacher: 'Mr. Alan Turing', time: '10:00 - 11:00', room: '301'}, ...mockPeriods.slice(4,6)],
-  thursday: mockPeriods.slice(2, 7),
-  friday: [mockPeriods[0], mockPeriods[2], mockPeriods[4], mockPeriods[6]],
-  saturday: [],
-  sunday: [],
-};
+async function fetchAPI(endpoint: string, params: Record<string, string> = {}) {
+  const url = new URL(`${API_BASE}${endpoint}`);
+  // Your backend expects 'class' as a query param, not 'class_name'
+  if(params.class_name) {
+    params.class = params.class_name;
+    delete params.class_name;
+  }
+  
+  Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
+  
+  const res = await fetch(url.toString());
+  if (!res.ok) {
+    console.error(`API Error: ${res.status} ${res.statusText} for ${url}`);
+    const errorBody = await res.text();
+    console.error('Error Body:', errorBody);
+    throw new Error(`Failed to fetch ${endpoint}`);
+  }
+  return res.json();
+}
 
 // /get_all_classes
 export const getAllClasses = async (): Promise<Class[]> => {
-  await mockDelay(500);
-  return mockClasses;
+  const data = await fetchAPI('/get_all_classes');
+  // The backend returns a list of strings, we need to map it to the Class interface
+  return data.classes.map((className: string) => ({
+      id: className.toLowerCase().replace(' ', '-'),
+      name: className
+  }));
 };
 
 // /get_current_period
-export const getCurrentPeriod = async (): Promise<Period> => {
-  await mockDelay(300);
-  // This is a simplified logic. A real app would check the current time.
-  const now = new Date();
-  const hour = now.getHours();
+export const getCurrentPeriod = async (className: string = DEFAULT_CLASS): Promise<Period> => {
+  const data = await fetchAPI('/get_current_period', { class: className });
+  // Map backend response to frontend Period type
+  const { current_subject, next_subject, message, day, time } = data;
   
-  if (hour >= 8 && hour < 9) {
-    return { ...mockPeriods[0], status: 'ongoing' };
-  }
-  if (hour >= 9 && hour < 10) {
-    return { ...mockPeriods[1], status: 'ongoing' };
-  }
-  if (hour >= 11 && hour < 12) {
-    return { ...mockPeriods[3], status: 'break' };
-  }
-  if (hour >= 15) {
-      return { ...mockPeriods[6], status: 'finished' }
-  }
+  let subject = 'Break';
+  let status: 'ongoing' | 'break' | 'finished' = 'break';
 
-  return { ...mockPeriods[2], status: 'ongoing' }; // Default to an ongoing class
+  if(current_subject){
+    subject = current_subject;
+    status = 'ongoing';
+  } else if (message?.includes('over')) {
+    status = 'finished';
+    subject = 'School Day Finished';
+  }
+  
+  return {
+    subject: subject,
+    teacher: 'N/A', // Not provided by this endpoint
+    time: time,
+    room: 'N/A', // Not provided by this endpoint
+    status: status,
+    message: message
+  };
 };
 
+const mapPeriods = (periods: any[]): Period[] => {
+    return periods.map(p => ({
+        subject: p.subject,
+        teacher: 'N/A', // Teacher info not in your backend response
+        time: `${p.start_time} - ${p.end_time}`,
+        room: 'N/A' // Room info not in your backend response
+    }))
+}
+
 // /get_day_schedule
-export const getDaySchedule = async (): Promise<Period[]> => {
-  await mockDelay(700);
-  const day = new Date().toLocaleString('en-us', { weekday: 'long' }).toLowerCase();
-  return mockFullWeek[day as keyof WeekSchedule] || [];
+export const getDaySchedule = async (className: string = DEFAULT_CLASS): Promise<Period[]> => {
+  const data = await fetchAPI('/get_day_schedule', { class: className });
+  return mapPeriods(data.timetable);
 };
 
 // /get_full_week
-export const getFullWeekSchedule = async (): Promise<WeekSchedule> => {
-    await mockDelay(1200);
-    return mockFullWeek;
+export const getFullWeekSchedule = async (className: string = DEFAULT_CLASS): Promise<WeekSchedule> => {
+    const data = await fetchAPI('/get_full_week', { class: className });
+    const schedule: Partial<WeekSchedule> = {};
+    for (const day in data.week_schedule) {
+        schedule[day.toLowerCase() as keyof WeekSchedule] = mapPeriods(data.week_schedule[day]);
+    }
+    return schedule as WeekSchedule;
 }
 
 // /search_periods_by_subject
 export const searchPeriodsBySubject = async (query: string): Promise<SearchResult> => {
-    await mockDelay(800);
+    if (!query) return {};
+    const data = await fetchAPI('/search_periods_by_subject', { subject: query });
     const results: SearchResult = {};
-    const lowerCaseQuery = query.toLowerCase();
-
-    for (const day in mockFullWeek) {
-        const periods = (mockFullWeek as any)[day].filter((period: Period) => 
-            period.subject.toLowerCase().includes(lowerCaseQuery)
-        );
-        if (periods.length > 0) {
-            results[day] = periods;
+    
+    // Group results by day
+    data.results.forEach((item: any) => {
+        if (!results[item.day]) {
+            results[item.day] = [];
         }
-    }
+        results[item.day].push({
+            subject: item.subject,
+            time: `${item.start_time} - ${item.end_time}`,
+            teacher: 'N/A',
+            room: 'N/A'
+        });
+    });
+
     return results;
 }

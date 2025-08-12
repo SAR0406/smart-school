@@ -9,6 +9,7 @@ export interface Period {
   time: string;
   room: string;
   status?: 'ongoing' | 'break' | 'finished';
+  message?: string;
 }
 
 export interface WeekSchedule {
