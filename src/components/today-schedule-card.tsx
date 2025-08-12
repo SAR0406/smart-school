@@ -16,11 +16,14 @@ import { Calendar, Loader2, ArrowRight } from "lucide-react";
 import {
   Dialog,
   DialogContent,
+  DialogHeader,
+  DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { getDaySchedule } from "@/lib/api";
 import type { Period } from "@/lib/types";
 import { FullWeekSchedule } from "./full-week-schedule";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const LoadingSkeleton = () => (
     <div className="space-y-2">
@@ -42,6 +45,11 @@ export function TodayScheduleCard() {
 
   useEffect(() => {
     setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
+
     async function fetchSchedule() {
       try {
         const data = await getDaySchedule();
@@ -53,7 +61,7 @@ export function TodayScheduleCard() {
       }
     }
     fetchSchedule();
-  }, []);
+  }, [isMounted]);
   
   if (!isMounted) {
     return (
@@ -120,8 +128,13 @@ export function TodayScheduleCard() {
                     <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl h-[80vh]">
-                <FullWeekSchedule />
+            <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+                <DialogHeader>
+                    <DialogTitle className="font-headline text-2xl font-semibold">Full Week Schedule</DialogTitle>
+                </DialogHeader>
+                <div className="flex-grow min-h-0">
+                    <FullWeekSchedule />
+                </div>
             </DialogContent>
         </Dialog>
       </CardFooter>

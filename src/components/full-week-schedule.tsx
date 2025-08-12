@@ -14,12 +14,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getFullWeekSchedule } from "@/lib/api";
 import type { WeekSchedule, Period } from "@/lib/types";
 import { Loader2 } from "lucide-react";
+import { ScrollArea } from "./ui/scroll-area";
 
 const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 const LoadingSkeleton = () => (
     <div className="space-y-4">
-        <div className="grid w-full grid-cols-3 md:grid-cols-7 gap-2">
+        <div className="grid w-full grid-cols-3 md:grid-cols-7 gap-2 px-1">
             {daysOfWeek.map(day => (
                 <Skeleton key={day} className="h-10 w-full" />
             ))}
@@ -54,42 +55,32 @@ export function FullWeekSchedule() {
     fetchSchedule();
   }, [isMounted]);
 
-  if (!isMounted) {
-    return (
-        <div className="space-y-4">
-            <h3 className="font-headline text-2xl font-semibold">Full Week Schedule</h3>
-            <LoadingSkeleton />
-        </div>
-    );
+  if (!isMounted || isLoading) {
+    return <LoadingSkeleton />;
   }
 
   return (
-    <div className="space-y-4">
-        <h3 className="font-headline text-2xl font-semibold">Full Week Schedule</h3>
-        {isLoading ? (
-            <div className="flex items-center justify-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        ) : (
-        <Tabs defaultValue="Monday" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 md:grid-cols-7">
-                {daysOfWeek.map(day => (
-                    <TabsTrigger key={day} value={day}>{day.slice(0,3)}</TabsTrigger>
-                ))}
-            </TabsList>
+    <Tabs defaultValue="Monday" className="w-full h-full flex flex-col">
+        <TabsList className="grid w-full grid-cols-3 md:grid-cols-7">
             {daysOfWeek.map(day => (
-                <TabsContent key={day} value={day}>
-                    <ScheduleTable periods={schedule ? schedule[day.toLowerCase() as keyof WeekSchedule] : []} />
-                </TabsContent>
+                <TabsTrigger key={day} value={day}>{day.slice(0,3)}</TabsTrigger>
             ))}
-        </Tabs>
-        )}
-    </div>
+        </TabsList>
+        <ScrollArea className="flex-grow mt-4">
+             <div className="pr-4">
+                {daysOfWeek.map(day => (
+                    <TabsContent key={day} value={day} className="mt-0">
+                        <ScheduleTable periods={schedule ? schedule[day.toLowerCase() as keyof WeekSchedule] : []} />
+                    </TabsContent>
+                ))}
+            </div>
+        </ScrollArea>
+    </Tabs>
   );
 }
 
 function ScheduleTable({ periods }: { periods: Period[] }) {
-    if (periods.length === 0) {
+    if (!periods || periods.length === 0) {
         return <p className="text-muted-foreground text-center p-8">No classes scheduled for this day.</p>
     }
   return (
