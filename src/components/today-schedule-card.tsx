@@ -40,6 +40,11 @@ export function TodayScheduleCard() {
 
   useEffect(() => {
     setIsMounted(true);
+  }, []);
+  
+  useEffect(() => {
+    if (!isMounted) return;
+    
     async function fetchSchedule() {
       try {
         const data = await getDaySchedule();
@@ -51,7 +56,7 @@ export function TodayScheduleCard() {
       }
     }
     fetchSchedule();
-  }, []);
+  }, [isMounted]);
 
   return (
     <Card className="h-full flex flex-col">
