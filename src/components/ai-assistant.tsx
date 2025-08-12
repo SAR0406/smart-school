@@ -82,10 +82,12 @@ export function AIAssistant() {
   const [input, setInput] = useState("");
   const [tool, setTool] = useState<Tool>("chat");
   const [isLoading, setIsLoading] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
+    setIsMounted(true);
     const storedMessages = localStorage.getItem("schoolzen-chat");
     if (storedMessages) {
       // Temporarily disable loading from localStorage to avoid rendering complex components
@@ -175,6 +177,21 @@ export function AIAssistant() {
       setIsLoading(false);
     }
   };
+
+  if (!isMounted) {
+    return (
+        <Card className="h-[calc(100vh-8rem)] flex flex-col">
+         <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="font-headline text-primary flex items-center gap-2">
+              <Bot /> AI Assistant
+            </CardTitle>
+         </CardHeader>
+         <CardContent className="flex-grow flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+         </CardContent>
+        </Card>
+    )
+  }
 
   return (
     <Card className="h-[calc(100vh-8rem)] flex flex-col">

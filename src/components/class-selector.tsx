@@ -17,14 +17,22 @@ export function ClassSelector() {
   const [classes, setClasses] = useState<Class[]>([]);
   const [selectedClass, setSelectedClass] = useState<string | undefined>();
   const [isLoading, setIsLoading] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
     async function fetchClasses() {
       try {
         const data = await getAllClasses();
         setClasses(data);
         if (data.length > 0) {
-          setSelectedClass(data[0].id);
+          // Check for a saved class in localStorage, otherwise default to the first one
+          const savedClass = localStorage.getItem('selectedClass');
+          if (savedClass && data.some(c => c.id === savedClass)) {
+            setSelectedClass(savedClass);
+          } else {
+            setSelectedClass(data[0].id);
+          }
         }
       } catch (error) {
         console.error("Failed to fetch classes:", error);
@@ -34,6 +42,30 @@ export function ClassSelector() {
     }
     fetchClasses();
   }, []);
+
+  const handleValueChange = (value: string) => {
+    setSelectedClass(value);
+    localStorage.setItem('selectedClass', value);
+  }
+  
+  if (!isMounted) {
+      return (
+          <Card>
+              <CardHeader>
+                  <CardTitle className="font-headline text-lg flex items-center gap-2">
+                      <School className="h-5 w-5 text-primary" />
+                      My Class
+                  </CardTitle>
+              </CardHeader>
+              <CardContent>
+                  <div className="flex items-center gap-2 text-muted-foreground h-10">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Loading...</span>
+                  </div>
+              </CardContent>
+          </Card>
+      );
+  }
 
   return (
     <Card>
@@ -50,7 +82,7 @@ export function ClassSelector() {
             <span>Loading classes...</span>
           </div>
         ) : (
-          <Select value={selectedClass} onValueChange={setSelectedClass}>
+          <Select value={selectedClass} onValueChange={handleValueChange}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select a class..." />
             </SelectTrigger>
