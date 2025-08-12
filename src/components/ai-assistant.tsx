@@ -15,6 +15,8 @@ import {
   BookOpen,
   Mic,
   Trash2,
+  Database,
+  Server,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -38,6 +40,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "./ui/tooltip";
+import { generateQuiz } from "@/ai/flows/quiz-flow";
+import { generateNotes } from "@/ai/flows/notes-flow";
+import { summarizeText } from "@/ai/flows/summarize-flow";
+import { helpWithCode } from "@/ai/flows/code-helper-flow";
+import { QuizDisplay } from "./quiz-display";
 
 type Message = {
   id: string;
@@ -57,6 +64,8 @@ type Tool =
   | "feedback"
   | "quiz";
 
+type ModelType = "endpoint" | "gemini";
+
 const toolConfig = {
   chat: { icon: Sparkles, name: "Chat", endpoint: "/api/ai/chat" },
   jarvis: { icon: BrainCircuit, name: "Jarvis", endpoint: "/api/ai/myai" },
@@ -69,21 +78,16 @@ const toolConfig = {
   quiz: { icon: Quote, name: "Quiz", endpoint: "/api/ai/quiz" },
 };
 
-async function getAIResponse(tool: Tool, prompt: string) {
+async function getAIResponseFromEndpoint(tool: Tool, prompt: string) {
     const config = toolConfig[tool];
-
-    // For quizzes, we modify the prompt to ask for JSON
-    let finalPrompt = prompt;
-    if (tool === 'quiz') {
-      const topicMatch = prompt.match(/(?:on|about|for)\s+(.+)/i);
-      const topic = topicMatch ? topicMatch[1] : prompt;
-      finalPrompt = `Generate a 5-question multiple-choice quiz on the topic "${topic}". Return it as a single JSON object with a key "quiz" which is an array of questions. Each question object should have: "question" (string), "options" (array of 4 strings), and "correctAnswerIndex" (number 0-3).`;
+    if (!config.endpoint) {
+        throw new Error(`Endpoint for tool ${tool} is not defined.`);
     }
 
     const response = await fetch(config.endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: finalPrompt, stream: false })
+        body: JSON.stringify({ prompt, stream: false })
     });
     
     if (!response.ok) {
@@ -95,11 +99,11 @@ async function getAIResponse(tool: Tool, prompt: string) {
     return data.response;
 }
 
-
 export function AIAssistant() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [tool, setTool] = useState<Tool>("chat");
+  const [model, setModel] = useState<ModelType>("endpoint");
   const [isLoading, setIsLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -152,14 +156,17 @@ export function AIAssistant() {
       }
     }
 
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     if(!isMounted) return;
     try {
         const storableMessages = messages.map(msg => {
             if (typeof msg.content !== 'string') {
-                return { ...msg, content: `[Interactive ${msg.tool} output]` };
+                // Check if content is a valid React element before trying to access its type
+                if (React.isValidElement(msg.content) && typeof msg.content.type !== 'string') {
+                   return { ...msg, content: `[Interactive ${msg.tool} output]` };
+                }
             }
             return msg;
         }).filter(m => m.content); 
@@ -170,7 +177,7 @@ export function AIAssistant() {
            localStorage.removeItem("schoolzen-chat");
         }
 
-    } catch (e) {
+    } catch (e) => {
         console.error("Could not save messages to localStorage", e);
     }
     
@@ -224,22 +231,51 @@ export function AIAssistant() {
 
     try {
       let responseContent: React.ReactNode;
-      const responseText = await getAIResponse(tool, input);
+      let responseText = "";
 
-      if (tool === 'quiz') {
-        try {
-            // Attempt to parse the JSON response.
-            const jsonString = responseText.substring(responseText.indexOf('{'), responseText.lastIndexOf('}') + 1);
-            const quizData = JSON.parse(jsonString);
-            const topicMatch = input.match(/(?:on|about|for)\s+(.+)/i);
-            const topic = topicMatch ? topicMatch[1] : 'the requested topic';
-            responseContent = <QuizDisplay quizData={quizData.quiz} topic={topic} />;
-        } catch(e) {
-            console.error("Failed to parse quiz JSON:", e);
-            responseContent = "I tried to create a quiz, but something went wrong with the format. Here's the raw text I received:\n\n" + responseText;
+      if (model === 'gemini') {
+        const geminiToolMap = {
+          quiz: { flow: generateQuiz, key: 'quiz' },
+          notes: { flow: generateNotes, key: 'notes' },
+          summary: { flow: summarizeText, key: 'summary' },
+          code: { flow: helpWithCode, key: 'response' },
+          chat: { flow: helpWithCode, key: 'response' }, // Fallback for chat-like tools
+          jarvis: { flow: helpWithCode, key: 'response' },
+          explain: { flow: helpWithCode, key: 'response' },
+          define: { flow: helpWithCode, key: 'response' },
+          feedback: { flow: helpWithCode, key: 'response' },
+        };
+        
+        const selectedTool = geminiToolMap[tool];
+        if (selectedTool) {
+            const result = await selectedTool.flow(input);
+            // @ts-ignore
+            responseText = result[selectedTool.key];
+             if (tool === 'quiz') {
+                responseContent = <QuizDisplay quizData={responseText as any} topic={input} />;
+            } else {
+                responseContent = responseText;
+            }
+        } else {
+            throw new Error(`Tool "${tool}" is not supported by the Gemini model.`);
         }
-      } else {
-        responseContent = responseText;
+
+      } else { // endpoint model
+        responseText = await getAIResponseFromEndpoint(tool, input);
+        if (tool === 'quiz') {
+            try {
+                const jsonString = responseText.substring(responseText.indexOf('{'), responseText.lastIndexOf('}') + 1);
+                const quizData = JSON.parse(jsonString);
+                const topicMatch = input.match(/(?:on|about|for)\s+(.+)/i);
+                const topic = topicMatch ? topicMatch[1] : 'the requested topic';
+                responseContent = <QuizDisplay quizData={quizData.quiz} topic={topic} />;
+            } catch(e) {
+                console.error("Failed to parse quiz JSON:", e);
+                responseContent = "I tried to create a quiz, but something went wrong with the format. Here's the raw text I received:\n\n" + responseText;
+            }
+        } else {
+            responseContent = responseText;
+        }
       }
       
       const assistantMessage: Message = {
@@ -251,15 +287,16 @@ export function AIAssistant() {
 
     } catch (error) {
       console.error("AI Assistant Error:", error);
+      const errorMessageText = error instanceof Error ? error.message : "There was a problem connecting to the AI assistant.";
       toast({
         variant: "destructive",
         title: "Uh oh! Something went wrong.",
-        description: "There was a problem connecting to the AI assistant.",
+        description: errorMessageText,
       });
       const errorMessage: Message = {
         id: loadingMessageId,
         role: "assistant",
-        content: "I'm sorry, I encountered an error. Please try again.",
+        content: `I'm sorry, I encountered an error: ${errorMessageText}`,
       };
       setMessages((prev) => prev.map(m => m.id === loadingMessageId ? errorMessage : m));
     } finally {
@@ -278,7 +315,7 @@ export function AIAssistant() {
   return (
     <TooltipProvider>
       <Card className="h-full flex flex-col rounded-lg shadow-lg">
-        <CardHeader className="flex flex-row items-center justify-between border-b">
+        <CardHeader className="flex flex-row items-center justify-between border-b gap-2">
           <CardTitle className="font-headline text-primary flex items-center gap-2">
             <Bot /> AI Assistant
           </CardTitle>
@@ -295,13 +332,31 @@ export function AIAssistant() {
                 </TooltipContent>
             </Tooltip>
             
+            <Select value={model} onValueChange={(v) => setModel(v as ModelType)}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select model" />
+              </SelectTrigger>
+              <SelectContent>
+                  <SelectItem value="endpoint">
+                    <div className="flex items-center gap-2">
+                      <Server className="h-4 w-4" /> Endpoint API
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="gemini">
+                     <div className="flex items-center gap-2">
+                      <Database className="h-4 w-4" /> Gemini Direct
+                    </div>
+                  </SelectItem>
+              </SelectContent>
+            </Select>
+
             <Select value={tool} onValueChange={(v) => setTool(v as Tool)}>
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="Select tool" />
               </SelectTrigger>
               <SelectContent>
                 {Object.entries(toolConfig).map(([key, { icon: Icon, name }]) => (
-                  <SelectItem key={key} value={key}>
+                  <SelectItem key={key} value={key} disabled={model === 'gemini' && !['quiz', 'notes', 'summary', 'code', 'chat', 'jarvis', 'explain', 'define', 'feedback'].includes(key)}>
                     <div className="flex items-center gap-2">
                       <Icon className="h-4 w-4" /> {name}
                     </div>
@@ -361,7 +416,7 @@ export function AIAssistant() {
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={isListening ? "Listening..." : `Ask about math, get a quiz on history, or just chat...`}
+              placeholder={isListening ? "Listening..." : `Using ${model === 'gemini' ? 'Gemini Direct' : 'Endpoint API'}...`}
               className="flex-grow resize-none"
               rows={1}
               onKeyDown={(e) => {
@@ -392,96 +447,5 @@ export function AIAssistant() {
         </CardFooter>
       </Card>
     </TooltipProvider>
-  );
-}
-
-
-function QuizDisplay({ quizData, topic }: { quizData: any[], topic: string }) {
-  const [answers, setAnswers] = useState<Record<number, number>>({});
-  const [submitted, setSubmitted] = useState(false);
-  const [score, setScore] = useState(0);
-
-  const handleSubmit = () => {
-    let correctCount = 0;
-    quizData.forEach((q, index) => {
-      if (answers[index] === q.correctAnswerIndex) {
-        correctCount++;
-      }
-    });
-    setScore(correctCount);
-    setSubmitted(true);
-  };
-
-  const handleRestart = () => {
-      setAnswers({});
-      setSubmitted(false);
-      setScore(0);
-  }
-
-  return (
-    <div className="space-y-4 rounded-lg border p-4">
-      <h3 className="font-bold text-lg capitalize">Quiz on {topic}</h3>
-      {submitted ? (
-        <div className="text-center space-y-4 p-4">
-            <h4 className="text-xl font-bold">Quiz Complete!</h4>
-            <p className="text-muted-foreground">You scored</p>
-            <div className="relative w-32 h-32 mx-auto my-4">
-                 <svg className="w-full h-full" viewBox="0 0 100 100">
-                    {/* Background circle */}
-                    <circle
-                        className="text-primary/20"
-                        strokeWidth="10"
-                        stroke="currentColor"
-                        fill="transparent"
-                        r="45"
-                        cx="50"
-                        cy="50"
-                    />
-                    {/* Progress circle */}
-                    <circle
-                        className="text-primary"
-                        strokeWidth="10"
-                        strokeDasharray={2 * Math.PI * 45}
-                        strokeDashoffset={2 * Math.PI * 45 * (1 - score / quizData.length)}
-                        strokeLinecap="round"
-                        stroke="currentColor"
-                        fill="transparent"
-                        r="45"
-                        cx="50"
-                        cy="50"
-                        style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%', transition: 'stroke-dashoffset 0.5s ease-in-out' }}
-                    />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-3xl font-bold">{score}/{quizData.length}</span>
-                </div>
-            </div>
-            <Button onClick={handleRestart}>Try Again</Button>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {quizData.map((q, qIndex) => (
-            <div key={qIndex}>
-              <p className="font-semibold mb-2">{qIndex + 1}. {q.question}</p>
-              <RadioGroup
-                onValueChange={(value) =>
-                  setAnswers((prev) => ({ ...prev, [qIndex]: parseInt(value) }))
-                }
-              >
-                {q.options.map((option: string, oIndex: number) => (
-                  <div key={oIndex} className="flex items-center space-x-2">
-                    <RadioGroupItem value={oIndex.toString()} id={`q${qIndex}o${oIndex}`} />
-                    <Label htmlFor={`q${qIndex}o${oIndex}`}>{option}</Label>
-                  </div>
-                ))}
-              </RadioGroup>
-            </div>
-          ))}
-          <Button onClick={handleSubmit} disabled={Object.keys(answers).length !== quizData.length}>
-            Submit Quiz
-          </Button>
-        </div>
-      )}
-    </div>
   );
 }
