@@ -65,7 +65,7 @@ export function TodayScheduleCard() {
         {isLoading || !isMounted ? (
             <LoadingSkeleton />
         ) : schedule.length > 0 ? (
-          <ScrollArea className="h-[300px]">
+          <ScrollArea className="h-full">
             <Table>
               <TableHeader>
                 <TableRow>

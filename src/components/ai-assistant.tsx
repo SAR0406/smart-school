@@ -31,7 +31,6 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import {
   Tooltip,
@@ -486,5 +485,3 @@ function QuizDisplay({ quizData, topic }: { quizData: any[], topic: string }) {
     </div>
   );
 }
-
-    
