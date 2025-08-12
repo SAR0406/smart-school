@@ -17,11 +17,30 @@ import { Loader2 } from "lucide-react";
 
 const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
+const LoadingSkeleton = () => (
+    <div className="space-y-4">
+        <div className="grid w-full grid-cols-3 md:grid-cols-7 gap-2">
+            {daysOfWeek.map(day => (
+                <Skeleton key={day} className="h-10 w-full" />
+            ))}
+        </div>
+        <Skeleton className="h-64 w-full" />
+    </div>
+);
+
+
 export function FullWeekSchedule() {
   const [schedule, setSchedule] = useState<WeekSchedule | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
+    
     async function fetchSchedule() {
       try {
         const data = await getFullWeekSchedule();
@@ -33,7 +52,16 @@ export function FullWeekSchedule() {
       }
     }
     fetchSchedule();
-  }, []);
+  }, [isMounted]);
+
+  if (!isMounted) {
+    return (
+        <div className="space-y-4">
+            <h3 className="font-headline text-2xl font-semibold">Full Week Schedule</h3>
+            <LoadingSkeleton />
+        </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
