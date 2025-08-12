@@ -73,11 +73,21 @@ const toolConfig = {
 
 async function getAIResponse(tool: Tool, prompt: string) {
     const config = toolConfig[tool];
+
+    // For quizzes, we modify the prompt to ask for JSON
+    let finalPrompt = prompt;
+    if (tool === 'quiz') {
+      const topicMatch = prompt.match(/(?:on|about|for)\s+(.+)/i);
+      const topic = topicMatch ? topicMatch[1] : prompt;
+      finalPrompt = `Generate a 5-question multiple-choice quiz on the topic "${topic}". Return it as a single JSON object with a key "quiz" which is an array of questions. Each question object should have: "question" (string), "options" (array of 4 strings), and "correctAnswerIndex" (number 0-3).`;
+    }
+
     const response = await fetch(config.endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, stream: false })
+        body: JSON.stringify({ prompt: finalPrompt, stream: false })
     });
+    
     if (!response.ok) {
         const errorBody = await response.text();
         console.error("API Error:", errorBody);
@@ -220,13 +230,15 @@ export function AIAssistant() {
 
       if (tool === 'quiz') {
         try {
-            const quizData = parseQuiz(responseText);
-            const topicMatch = input.match(/on (.*)/i);
-            const topic = topicMatch ? topicMatch[1] : 'the topic';
-            responseContent = <QuizDisplay quizData={quizData} topic={topic} />;
+            // Attempt to parse the JSON response.
+            const jsonString = responseText.substring(responseText.indexOf('{'), responseText.lastIndexOf('}') + 1);
+            const quizData = JSON.parse(jsonString);
+            const topicMatch = input.match(/(?:on|about|for)\s+(.+)/i);
+            const topic = topicMatch ? topicMatch[1] : 'the requested topic';
+            responseContent = <QuizDisplay quizData={quizData.quiz} topic={topic} />;
         } catch(e) {
-            console.error("Failed to parse quiz:", e);
-            responseContent = "I tried to make a quiz, but something went wrong with the format. Here's the raw text:\n\n" + responseText;
+            console.error("Failed to parse quiz JSON:", e);
+            responseContent = "I tried to create a quiz, but something went wrong with the format. Here's the raw text I received:\n\n" + responseText;
         }
       } else {
         responseContent = responseText;
@@ -385,49 +397,6 @@ export function AIAssistant() {
   );
 }
 
-function parseQuiz(text: string): any[] {
-    const questions = [];
-    const questionBlocks = text.split(/\n\s*\d+\.\s/g).filter(Boolean);
-
-    for (const block of questionBlocks) {
-        const lines = block.trim().split('\n');
-        if (lines.length < 2) continue;
-
-        const question = lines[0].trim();
-        const options = [];
-        let correctAnswerIndex = -1;
-
-        for (let i = 1; i < lines.length; i++) {
-            const line = lines[i].trim();
-            const optionMatch = line.match(/^[a-d]\)\s*(.*)/i);
-            if (optionMatch) {
-                const optionText = optionMatch[1].trim();
-                if (optionText.includes("(Correct)")) {
-                    correctAnswerIndex = options.length;
-                    options.push(optionText.replace(/\(Correct\)/i, '').trim());
-                } else {
-                    options.push(optionText);
-                }
-            } else {
-                 const answerMatch = line.match(/Answer:\s*[a-d]\)/i);
-                 if (answerMatch) {
-                     correctAnswerIndex = answerMatch[0].toLowerCase().charCodeAt(answerMatch[0].length - 2) - 97;
-                 }
-            }
-        }
-        
-        if (question && options.length > 1 && correctAnswerIndex !== -1) {
-            questions.push({ question, options, correctAnswerIndex });
-        }
-    }
-
-    if (questions.length === 0) {
-        throw new Error("Could not parse any questions from the text.");
-    }
-
-    return questions;
-}
-
 
 function QuizDisplay({ quizData, topic }: { quizData: any[], topic: string }) {
   const [answers, setAnswers] = useState<Record<number, number>>({});
@@ -453,13 +422,38 @@ function QuizDisplay({ quizData, topic }: { quizData: any[], topic: string }) {
 
   return (
     <div className="space-y-4 rounded-lg border p-4">
-      <h3 className="font-bold text-lg">Quiz on {topic}</h3>
+      <h3 className="font-bold text-lg capitalize">Quiz on {topic}</h3>
       {submitted ? (
-        <div className="text-center space-y-4">
+        <div className="text-center space-y-4 p-4">
             <h4 className="text-xl font-bold">Quiz Complete!</h4>
-            <p className="text-2xl">You scored</p>
-            <div className="relative w-32 h-32 mx-auto">
-                <Progress value={(score/quizData.length) * 100} className="w-32 h-32 rounded-full absolute" style={{clipPath: 'circle(50% at 50% 50%)'}}/>
+            <p className="text-muted-foreground">You scored</p>
+            <div className="relative w-32 h-32 mx-auto my-4">
+                 <svg className="w-full h-full" viewBox="0 0 100 100">
+                    {/* Background circle */}
+                    <circle
+                        className="text-primary/20"
+                        strokeWidth="10"
+                        stroke="currentColor"
+                        fill="transparent"
+                        r="45"
+                        cx="50"
+                        cy="50"
+                    />
+                    {/* Progress circle */}
+                    <circle
+                        className="text-primary"
+                        strokeWidth="10"
+                        strokeDasharray={2 * Math.PI * 45}
+                        strokeDashoffset={2 * Math.PI * 45 * (1 - score / quizData.length)}
+                        strokeLinecap="round"
+                        stroke="currentColor"
+                        fill="transparent"
+                        r="45"
+                        cx="50"
+                        cy="50"
+                        style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%', transition: 'stroke-dashoffset 0.5s ease-in-out' }}
+                    />
+                </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
                     <span className="text-3xl font-bold">{score}/{quizData.length}</span>
                 </div>
@@ -493,3 +487,5 @@ function QuizDisplay({ quizData, topic }: { quizData: any[], topic: string }) {
     </div>
   );
 }
+
+    
