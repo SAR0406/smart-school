@@ -54,6 +54,9 @@ export function TodayScheduleCard() {
                 <Skeleton className="h-8 w-full" />
                 <Skeleton className="h-8 w-full" />
                 <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
             </div>
         ) : schedule.length > 0 ? (
           <Table>
