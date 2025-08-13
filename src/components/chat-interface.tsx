@@ -10,7 +10,6 @@ import {
   Mic,
   Trash2,
   BrainCircuit,
-  Switch,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,16 +27,10 @@ import {
 import ReactMarkdown from 'react-markdown';
 import { QuizDisplay } from "./quiz-display";
 import { Label } from "./ui/label";
+import { Switch } from "./ui/switch";
 
 // API and Flow Imports
 import { getNvidiaAIResponse } from "@/lib/api";
-import { generateQuiz } from "@/ai/flows/quiz-flow";
-import { helpWithCode } from "@/ai/flows/code-helper-flow";
-import { generateNotes } from "@/ai/flows/notes-flow";
-import { summarizeText } from "@/ai/flows/summarize-flow";
-import { chatWithAI } from "@/ai/flows/chat-flow";
-import { defineTerm } from "@/ai/flows/define-flow";
-import { explainConcept } from "@/ai/flows/explain-flow";
 import { chatWithGemini } from "@/ai/flows/gemini-chat-flow";
 
 
@@ -59,15 +52,8 @@ interface ChatInterfaceProps {
 }
 
 const geminiFlows = {
-    "quiz": generateQuiz,
-    "code": helpWithCode,
-    "notes": generateNotes,
-    "summary": summarizeText,
-    "chat": chatWithAI,
-    "define": defineTerm,
-    "explain": explainConcept,
+    // This is now simplified as we only have one Gemini flow for chat
     "gemini-chat": chatWithGemini,
-    "jarvis": chatWithAI, // Jarvis can use the general chat flow
 }
 
 export function ChatInterface({ tool, welcomeMessage, promptPlaceholder, model: initialModel = 'nvidia' }: ChatInterfaceProps) {
@@ -170,7 +156,7 @@ export function ChatInterface({ tool, welcomeMessage, promptPlaceholder, model: 
 
     try {
         if (currentModel === 'gemini') {
-            const flow = geminiFlows[tool as keyof typeof geminiFlows];
+            const flow = geminiFlows["gemini-chat"];
             if (!flow) throw new Error(`Invalid tool for Gemini: ${tool}`);
             
             const result = await flow(currentInput);
@@ -207,7 +193,12 @@ export function ChatInterface({ tool, welcomeMessage, promptPlaceholder, model: 
     if (typeof message.content !== 'string') {
       return message.content;
     }
-     if ((tool === 'quiz' || tool === 'gemini-chat') && message.role === 'assistant' && message.content.includes('question')) {
+     // For NVIDIA quiz, we need to parse the plain text.
+     if (tool === 'quiz' && message.role === 'assistant' && message.content.includes('1.')) {
+        return <QuizDisplay quizText={message.content as string} topic="Quiz" />;
+     }
+     // For Gemini quiz, it might return a JSON string
+     if ((tool === 'gemini-chat' || tool === 'quiz') && message.role === 'assistant' && message.content.includes('question')) {
         return <QuizDisplay quizText={message.content as string} topic="Quiz" />;
      }
     return <ReactMarkdown className="prose dark:prose-invert max-w-full">{message.content}</ReactMarkdown>;
@@ -225,6 +216,8 @@ export function ChatInterface({ tool, welcomeMessage, promptPlaceholder, model: 
     );
   }
 
+  const isGeminiEnabled = tool === 'chat' || tool === 'quiz';
+
   return (
     <TooltipProvider>
       <Card className="h-full flex flex-col rounded-lg shadow-lg">
@@ -235,7 +228,7 @@ export function ChatInterface({ tool, welcomeMessage, promptPlaceholder, model: 
             </div>
           </div>
           <div className="flex items-center gap-2">
-            { initialModel !== 'gemini' && (
+            { isGeminiEnabled && (
                 <div className="flex items-center space-x-2">
                     <Label htmlFor="model-switch" className="text-sm font-medium">NVIDIA</Label>
                     <Switch id="model-switch" checked={currentModel === 'gemini'} onCheckedChange={handleModelToggle} />
