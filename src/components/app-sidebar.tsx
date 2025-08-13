@@ -25,14 +25,9 @@ export function AppSidebar() {
   const pathname = usePathname();
 
   const isLinkActive = (href: string) => {
-    if (href === "/") {
-        return pathname === "/";
-    }
-    // For top-level links like /ai, we want an exact match.
-    if (href === "/ai" || href === "/gemini" || href === "/ai/scanner") {
-      return pathname === href;
-    }
-    return pathname.startsWith(href);
+    // Use exact match for all links to avoid hydration errors
+    // where multiple links could be considered active (e.g., /ai and /ai/scanner)
+    return pathname === href;
   };
 
   return (
