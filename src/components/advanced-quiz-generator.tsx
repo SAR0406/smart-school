@@ -24,10 +24,12 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { generateAdvancedQuiz, type AdvancedQuizInput, type AdvancedQuizOutput } from "@/ai/flows/advanced-quiz-flow";
+import { generateAdvancedQuiz } from "@/ai/flows/advanced-quiz-flow";
+import type { AdvancedQuizOutput } from "@/ai/flows/advanced-quiz-flow";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { QuizDisplay } from "./quiz-display";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 
 
 const formSchema = z.object({
@@ -56,7 +58,7 @@ export function AdvancedQuizGenerator() {
     setIsLoading(true);
     setQuizData(null);
     try {
-      const result = await generateAdvancedQuiz(values as AdvancedQuizInput);
+      const result = await generateAdvancedQuiz(values);
       setQuizData(result);
     } catch (error) {
       console.error("Failed to generate quiz:", error);
