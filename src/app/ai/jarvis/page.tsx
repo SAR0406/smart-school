@@ -1,0 +1,30 @@
+import { ChatInterface } from "@/components/chat-interface";
+import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { Shield } from "lucide-react";
+
+export default function JarvisPage() {
+    return (
+        <SidebarInset>
+            <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
+                <div className="flex items-center gap-2">
+                    <SidebarTrigger className="md:hidden" />
+                    <h1 className="text-lg font-semibold md:text-xl flex items-center gap-2">
+                        <Shield /> Jarvis
+                    </h1>
+                </div>
+            </header>
+            <main className="flex flex-1 flex-col p-4 sm:p-6 lg:p-8">
+                <div className="h-[calc(100vh-120px)]">
+                    <ChatInterface 
+                        tool="myai" 
+                        welcomeMessage={{
+                            title: "Greetings, Boss.",
+                            message: "I am Jarvis, your personal AI assistant. How may I be of service today?"
+                        }}
+                        promptPlaceholder="e.g., 'What's on my schedule?' or 'Give me a summary of today's news.'"
+                    />
+                </div>
+            </main>
+        </SidebarInset>
+    )
+}

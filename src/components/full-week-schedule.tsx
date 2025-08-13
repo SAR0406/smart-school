@@ -11,11 +11,11 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getFullWeekSchedule } from "@/lib/api";
-import type { WeekSchedule, Period } from "@/lib/types";
+import { getDayScheduleByDay } from "@/lib/api";
+import type { Period } from "@/lib/types";
 import { ScrollArea } from "./ui/scroll-area";
 import { Alert, AlertTitle, AlertDescription } from "./ui/alert";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 
 const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -26,60 +26,66 @@ const LoadingSkeleton = () => (
                 <Skeleton key={day} className="h-10 w-full" />
             ))}
         </div>
-        <Skeleton className="h-64 w-full" />
+        <div className="flex items-center justify-center p-8">
+             <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
     </div>
 );
 
 
 export function FullWeekSchedule() {
-  const [schedule, setSchedule] = useState<WeekSchedule | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [schedule, setSchedule] = useState<Record<string, Period[]>>({});
+  const [loadingDay, setLoadingDay] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [initialDay, setInitialDay] = useState(daysOfWeek[0]);
 
   useEffect(() => {
     setIsMounted(true);
+    const todayIndex = new Date().getDay() - 1;
+    // getDay() returns 0 for Sunday, 1 for Monday, etc.
+    // We want Monday to be 0, Sunday to be 6
+    const adjustedTodayIndex = todayIndex < 0 ? 6 : todayIndex;
+    if (adjustedTodayIndex < daysOfWeek.length) {
+      setInitialDay(daysOfWeek[adjustedTodayIndex]);
+    }
   }, []);
 
-  useEffect(() => {
-    if (!isMounted) return;
+  const fetchScheduleForDay = async (day: string) => {
+    // Don't refetch if we already have the data
+    if (schedule[day]) return;
     
-    async function fetchSchedule() {
-      try {
+    setLoadingDay(day);
+    setError(null);
+    try {
         const classId = localStorage.getItem("selectedClass");
         if (!classId) {
             setError("Please select a class to view the schedule.");
-            setIsLoading(false);
             return;
         }
-        const data = await getFullWeekSchedule();
-        setSchedule(data);
-      } catch (err) {
-        console.error("Failed to fetch week schedule:", err);
-        setError("Could not load the weekly schedule. Please try again later.");
-      } finally {
-        setIsLoading(false);
-      }
+      const data = await getDayScheduleByDay(day);
+      setSchedule(prev => ({ ...prev, [day]: data }));
+    } catch (err) {
+      console.error(`Failed to fetch schedule for ${day}:`, err);
+      setError(`Could not load the schedule for ${day}.`);
+    } finally {
+      setLoadingDay(null);
     }
-    fetchSchedule();
-  }, [isMounted]);
-  
-  if (error) {
-    return (
-        <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-        </Alert>
-    )
-  }
+  };
 
-  if (!isMounted || isLoading) {
+  useEffect(() => {
+    if (isMounted) {
+        fetchScheduleForDay(initialDay);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMounted, initialDay]);
+
+  if (!isMounted) {
     return <LoadingSkeleton />;
   }
-
+  
   return (
-    <Tabs defaultValue="Monday" className="w-full h-full flex flex-col">
+    <Tabs defaultValue={initialDay} className="w-full h-full flex flex-col" onValueChange={fetchScheduleForDay}>
         <TabsList className="grid w-full grid-cols-3 md:grid-cols-7">
             {daysOfWeek.map(day => (
                 <TabsTrigger key={day} value={day}>{day}</TabsTrigger>
@@ -89,7 +95,19 @@ export function FullWeekSchedule() {
              <div className="pr-4">
                 {daysOfWeek.map(day => (
                     <TabsContent key={day} value={day} className="mt-0">
-                        <ScheduleTable periods={schedule ? schedule[day.toLowerCase() as keyof WeekSchedule] : []} />
+                        {loadingDay === day && (
+                             <div className="flex items-center justify-center p-8">
+                                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                            </div>
+                        )}
+                        {schedule[day] && <ScheduleTable periods={schedule[day]} />}
+                        {error && loadingDay === null && (
+                            <Alert variant="destructive">
+                                <AlertTriangle className="h-4 w-4" />
+                                <AlertTitle>Error</AlertTitle>
+                                <AlertDescription>{error}</AlertDescription>
+                            </Alert>
+                        )}
                     </TabsContent>
                 ))}
             </div>
@@ -99,7 +117,7 @@ export function FullWeekSchedule() {
 }
 
 function ScheduleTable({ periods }: { periods: Period[] }) {
-    if (!periods || periods.length === 0) {
+    if (!periods || periods.length === 0 || (periods.length === 1 && periods[0].subject === 'Holiday')) {
         return <p className="text-muted-foreground text-center p-8">No classes scheduled for this day.</p>
     }
   return (

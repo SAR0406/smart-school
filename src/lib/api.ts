@@ -86,6 +86,11 @@ export const getDaySchedule = async (): Promise<Period[]> => {
   return mapPeriods(data.timetable);
 };
 
+export const getDayScheduleByDay = async (day: string): Promise<Period[]> => {
+  const data = await fetchAPI(`/get_day_schedule/${day}`);
+  return mapPeriods(data.timetable);
+}
+
 export const getFullWeekSchedule = async (): Promise<WeekSchedule> => {
     const data = await fetchAPI('/get_full_week');
     const schedule: Partial<WeekSchedule> = {};

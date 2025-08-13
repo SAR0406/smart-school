@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpen, Bot, Code, FileText, HelpCircle, MessageSquare, Quote } from "lucide-react";
+import { ArrowRight, BookOpen, Bot, Code, FileText, HelpCircle, MessageSquare, Quote, Shield } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
@@ -59,6 +59,14 @@ const tools = [
     href: "/ai/explain",
     color: "text-indigo-500",
     bgColor: "bg-indigo-500/10",
+  },
+  {
+    title: "Jarvis",
+    description: "Your personal AI assistant, like Jarvis.",
+    icon: Shield,
+    href: "/ai/jarvis",
+    color: "text-cyan-500",
+    bgColor: "bg-cyan-500/10",
   },
 ];
 
