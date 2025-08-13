@@ -20,7 +20,7 @@ const AdvancedQuizInputSchema = z.object({
     .optional()
     .describe('Any custom instructions for the quiz generation.'),
 });
-export type AdvancedQuizInput = z.infer<typeof AdvancedQuizInputSchema>;
+type AdvancedQuizInput = z.infer<typeof AdvancedQuizInputSchema>;
 
 const QuizQuestionSchema = z.object({
   question: z.string(),
@@ -39,6 +39,7 @@ const quizGenerationPrompt = ai.definePrompt({
     output: { schema: AdvancedQuizOutputSchema },
     model: gemini15Flash,
     prompt: `
+      You must start every response with a relevant emoji.
       Generate a quiz based on the following criteria:
       Topic: {{{topic}}}
       Number of Questions: {{{numQuestions}}}

@@ -136,10 +136,11 @@ export const searchPeriodsBySubject = async (query: string): Promise<SearchResul
 }
 
 export const getNvidiaAIResponse = async (tool: string, prompt: string, streamCallback: (chunk: string) => void) => {
+  const modifiedPrompt = `You must start every response with a relevant emoji. User query: ${prompt}`;
   const response = await fetch(`${API_BASE}/ai/${tool}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt, stream: true })
+    body: JSON.stringify({ prompt: modifiedPrompt, stream: true })
   });
   
   if (!response.ok || !response.body) {
