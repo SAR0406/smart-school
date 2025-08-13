@@ -1,4 +1,5 @@
-import { ArrowRight, BookOpen, Bot, Code, FileText, HelpCircle, MessageSquare, Quote, Shield } from "lucide-react";
+
+import { ArrowRight, BookOpen, Bot, Code, FileText, HelpCircle, MessageSquare, Quote, ScanLine, Shield } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -19,6 +20,14 @@ const tools = [
     href: "/ai/quiz",
     color: "text-blue-500",
     bgColor: "bg-blue-500/10",
+  },
+    {
+    title: "Document Scanner",
+    description: "Scan documents and ask questions about them.",
+    icon: ScanLine,
+    href: "/ai/scanner",
+    color: "text-teal-500",
+    bgColor: "bg-teal-500/10",
   },
   {
     title: "Notes Generator",

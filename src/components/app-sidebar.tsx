@@ -3,7 +3,7 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Bot, GraduationCap, LayoutDashboard, MessageSquare } from "lucide-react";
+import { Bot, GraduationCap, LayoutDashboard, MessageSquare, ScanLine } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -18,6 +18,7 @@ const menuItems = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/ai", label: "AI Tools", icon: Bot },
     { href: "/gemini", label: "Gemini", icon: Bot },
+    { href: "/ai/scanner", label: "Scanner", icon: ScanLine },
 ];
 
 export function AppSidebar() {
