@@ -8,7 +8,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
-export const AdvancedQuizInputSchema = z.object({
+const AdvancedQuizInputSchema = z.object({
   topic: z.string().describe('The topic of the quiz.'),
   numQuestions: z.number().describe('The number of questions to generate.'),
   questionType: z
@@ -21,13 +21,13 @@ export const AdvancedQuizInputSchema = z.object({
 });
 export type AdvancedQuizInput = z.infer<typeof AdvancedQuizInputSchema>;
 
-export const QuizQuestionSchema = z.object({
+const QuizQuestionSchema = z.object({
   question: z.string(),
   options: z.array(z.string()).optional(),
   correctAnswer: z.string(),
 });
 
-export const AdvancedQuizOutputSchema = z.object({
+const AdvancedQuizOutputSchema = z.object({
   quiz: z.array(QuizQuestionSchema),
 });
 export type AdvancedQuizOutput = z.infer<typeof AdvancedQuizOutputSchema>;
@@ -53,7 +53,7 @@ const quizGenerationPrompt = ai.definePrompt({
 });
 
 
-export const generateAdvancedQuiz = ai.defineFlow(
+const generateAdvancedQuizFlow = ai.defineFlow(
   {
     name: 'generateAdvancedQuizFlow',
     inputSchema: AdvancedQuizInputSchema,
@@ -64,3 +64,8 @@ export const generateAdvancedQuiz = ai.defineFlow(
     return llmResponse.output!;
   }
 );
+
+
+export async function generateAdvancedQuiz(input: AdvancedQuizInput): Promise<AdvancedQuizOutput> {
+  return await generateAdvancedQuizFlow(input);
+}
