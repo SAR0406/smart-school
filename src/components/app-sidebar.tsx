@@ -1,3 +1,4 @@
+
 "use client";
 
 import { usePathname } from "next/navigation";
@@ -15,8 +16,8 @@ import { ClassSelector } from "@/components/class-selector";
 
 const menuItems = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/ai/chat", label: "AI Chat", icon: MessageSquare },
     { href: "/ai", label: "AI Tools", icon: Bot },
+    { href: "/gemini", label: "Gemini", icon: Bot },
 ];
 
 export function AppSidebar() {
@@ -39,7 +40,10 @@ export function AppSidebar() {
                 {menuItems.map((item) => (
                     <SidebarMenuItem key={item.href}>
                          <Link href={item.href} className="w-full">
-                            <SidebarMenuButton isActive={pathname.startsWith(item.href) && (item.href !== '/' || pathname === '/')} tooltip={item.label}>
+                            <SidebarMenuButton 
+                              isActive={pathname.startsWith(item.href) && (item.href !== '/' || pathname === '/')} 
+                              tooltip={item.label}
+                            >
                                 <item.icon />
                                 <span>{item.label}</span>
                             </SidebarMenuButton>

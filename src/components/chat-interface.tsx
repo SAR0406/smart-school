@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useRef, type FormEvent } from "react";
@@ -9,6 +10,7 @@ import {
   Mic,
   Trash2,
   BrainCircuit,
+  Switch,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,9 +27,19 @@ import {
 } from "./ui/tooltip";
 import ReactMarkdown from 'react-markdown';
 import { QuizDisplay } from "./quiz-display";
+import { Label } from "./ui/label";
 
 // API and Flow Imports
 import { getNvidiaAIResponse } from "@/lib/api";
+import { generateQuiz } from "@/ai/flows/quiz-flow";
+import { helpWithCode } from "@/ai/flows/code-helper-flow";
+import { generateNotes } from "@/ai/flows/notes-flow";
+import { summarizeText } from "@/ai/flows/summarize-flow";
+import { chatWithAI } from "@/ai/flows/chat-flow";
+import { defineTerm } from "@/ai/flows/define-flow";
+import { explainConcept } from "@/ai/flows/explain-flow";
+import { chatWithGemini } from "@/ai/flows/gemini-chat-flow";
+
 
 type Message = {
   id: string;
@@ -35,41 +47,45 @@ type Message = {
   content: string | React.ReactNode;
 };
 
-type AITool = "chat" | "explain" | "define" | "code" | "summary" | "notes" | "quiz";
+type AITool = "chat" | "explain" | "define" | "code" | "summary" | "notes" | "quiz" | "jarvis" | "gemini-chat";
+type AIModel = "nvidia" | "gemini";
+
 
 interface ChatInterfaceProps {
     tool: AITool;
     welcomeMessage: { title: string; message: string };
     promptPlaceholder?: string;
+    model?: AIModel;
 }
 
-export function ChatInterface({ tool, welcomeMessage, promptPlaceholder }: ChatInterfaceProps) {
+const geminiFlows = {
+    "quiz": generateQuiz,
+    "code": helpWithCode,
+    "notes": generateNotes,
+    "summary": summarizeText,
+    "chat": chatWithAI,
+    "define": defineTerm,
+    "explain": explainConcept,
+    "gemini-chat": chatWithGemini,
+    "jarvis": chatWithAI, // Jarvis can use the general chat flow
+}
+
+export function ChatInterface({ tool, welcomeMessage, promptPlaceholder, model: initialModel = 'nvidia' }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [currentModel, setCurrentModel] = useState<AIModel>(initialModel);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const { toast } = useToast();
 
-  const storageKey = `schoolzen-chat-${tool}`;
+  const storageKey = `schoolzen-chat-${tool}-${currentModel}`;
 
   useEffect(() => {
     setIsMounted(true);
-    try {
-        const storedMessages = localStorage.getItem(storageKey);
-        if (storedMessages) {
-          const parsed = JSON.parse(storedMessages);
-          // Filter out any messages that might have non-serializable content from previous versions
-          const validMessages = parsed.filter((m: Message) => typeof m.content === 'string');
-          setMessages(validMessages);
-        }
-    } catch (e) {
-        console.error("Could not load messages from localStorage", e);
-        localStorage.removeItem(storageKey);
-    }
-
+    // Setup Speech Recognition
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
       recognitionRef.current = new SpeechRecognition();
@@ -87,14 +103,36 @@ export function ChatInterface({ tool, welcomeMessage, promptPlaceholder }: ChatI
         setIsListening(false);
       }
     }
-  }, [toast, storageKey]);
+  }, [toast]);
 
+  // Load messages from localStorage when model changes
+  useEffect(() => {
+    if (!isMounted) return;
+    try {
+        const storedMessages = localStorage.getItem(storageKey);
+        if (storedMessages) {
+          const parsed = JSON.parse(storedMessages);
+          const validMessages = parsed.filter((m: Message) => typeof m.content === 'string' || (m.content && typeof (m.content as any).type === 'function'));
+          setMessages(validMessages);
+        } else {
+          setMessages([]);
+        }
+    } catch (e) {
+        console.error("Could not load messages from localStorage", e);
+        localStorage.removeItem(storageKey);
+        setMessages([]);
+    }
+  }, [isMounted, storageKey]);
+
+
+  // Save messages to localStorage and scroll
   useEffect(() => {
     if(!isMounted) return;
     try {
-        // Only store messages with string content
        const messagesToStore = messages.filter(m => typeof m.content === 'string');
-       localStorage.setItem(storageKey, JSON.stringify(messagesToStore));
+       if (messagesToStore.length > 0) {
+        localStorage.setItem(storageKey, JSON.stringify(messagesToStore));
+       }
     } catch (e) {
         console.error("Could not save messages to localStorage", e);
     }
@@ -123,6 +161,7 @@ export function ChatInterface({ tool, welcomeMessage, promptPlaceholder }: ChatI
 
     const userMessage: Message = { id: Date.now().toString(), role: "user", content: input };
     setMessages((prev) => [...prev, userMessage]);
+    const currentInput = input;
     setInput("");
     setIsLoading(true);
 
@@ -130,13 +169,27 @@ export function ChatInterface({ tool, welcomeMessage, promptPlaceholder }: ChatI
     setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "" }]);
 
     try {
-        await getNvidiaAIResponse(tool, input, (chunk) => {
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.id === assistantId ? { ...msg, content: (msg.content as string) + chunk } : msg
-            )
-          );
-        });
+        if (currentModel === 'gemini') {
+            const flow = geminiFlows[tool as keyof typeof geminiFlows];
+            if (!flow) throw new Error(`Invalid tool for Gemini: ${tool}`);
+            
+            const result = await flow(currentInput);
+            const content = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
+            
+            setMessages((prev) =>
+                prev.map((msg) =>
+                msg.id === assistantId ? { ...msg, content } : msg
+                )
+            );
+        } else { // NVIDIA
+            await getNvidiaAIResponse(tool, currentInput, (chunk) => {
+                setMessages((prev) =>
+                    prev.map((msg) =>
+                    msg.id === assistantId ? { ...msg, content: (msg.content as string) + chunk } : msg
+                    )
+                );
+            });
+        }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
       setMessages((prev) =>
@@ -154,11 +207,15 @@ export function ChatInterface({ tool, welcomeMessage, promptPlaceholder }: ChatI
     if (typeof message.content !== 'string') {
       return message.content;
     }
-     if (tool === 'quiz' && message.role === 'assistant') {
+     if ((tool === 'quiz' || tool === 'gemini-chat') && message.role === 'assistant' && message.content.includes('question')) {
         return <QuizDisplay quizText={message.content as string} topic="Quiz" />;
      }
     return <ReactMarkdown className="prose dark:prose-invert max-w-full">{message.content}</ReactMarkdown>;
   };
+
+  const handleModelToggle = () => {
+    setCurrentModel(prev => prev === 'nvidia' ? 'gemini' : 'nvidia');
+  }
 
   if (!isMounted) {
     return (
@@ -174,18 +231,27 @@ export function ChatInterface({ tool, welcomeMessage, promptPlaceholder }: ChatI
         <CardHeader className="flex flex-row items-center justify-between border-b gap-2">
            <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
-                <BrainCircuit className="h-5 w-5 text-primary" /> AI Model: NVIDIA
+                <BrainCircuit className="h-5 w-5 text-primary" /> AI Model: <span className="capitalize font-semibold text-foreground">{currentModel}</span>
             </div>
           </div>
-          <Tooltip>
-              <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={handleClearChat} disabled={messages.length === 0}>
-                      <Trash2 className="h-4 w-4" />
-                      <span className="sr-only">Clear Chat</span>
-                  </Button>
-              </TooltipTrigger>
-              <TooltipContent><p>Clear Chat</p></TooltipContent>
-          </Tooltip>
+          <div className="flex items-center gap-2">
+            { initialModel !== 'gemini' && (
+                <div className="flex items-center space-x-2">
+                    <Label htmlFor="model-switch" className="text-sm font-medium">NVIDIA</Label>
+                    <Switch id="model-switch" checked={currentModel === 'gemini'} onCheckedChange={handleModelToggle} />
+                    <Label htmlFor="model-switch" className="text-sm font-medium">Gemini</Label>
+                </div>
+            )}
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={handleClearChat} disabled={messages.length === 0}>
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Clear Chat</span>
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent><p>Clear Chat</p></TooltipContent>
+            </Tooltip>
+          </div>
         </CardHeader>
         <CardContent className="flex-grow overflow-hidden p-4 md:p-6">
           <ScrollArea className="h-full pr-4" ref={scrollAreaRef}>
