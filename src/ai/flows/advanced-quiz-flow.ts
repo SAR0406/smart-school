@@ -6,6 +6,7 @@
  * and custom instructions.
  */
 import { ai } from '@/ai/genkit';
+import { gemini15Flash } from '@genkit-ai/googleai';
 import { z } from 'zod';
 
 const AdvancedQuizInputSchema = z.object({
@@ -36,6 +37,7 @@ const quizGenerationPrompt = ai.definePrompt({
     name: 'advancedQuizPrompt',
     input: { schema: AdvancedQuizInputSchema },
     output: { schema: AdvancedQuizOutputSchema },
+    model: gemini15Flash,
     prompt: `
       Generate a quiz based on the following criteria:
       Topic: {{{topic}}}
