@@ -24,6 +24,16 @@ const menuItems = [
 export function AppSidebar() {
   const pathname = usePathname();
 
+  const isLinkActive = (href: string) => {
+    if (href === "/") {
+        return pathname === "/";
+    }
+    if (href === "/ai") {
+        return pathname === "/ai";
+    }
+    return pathname.startsWith(href);
+  };
+
   return (
     <Sidebar side="left" variant="sidebar" collapsible="icon" className="group">
       <SidebarHeader>
@@ -42,7 +52,7 @@ export function AppSidebar() {
                     <SidebarMenuItem key={item.href}>
                          <Link href={item.href} className="w-full">
                             <SidebarMenuButton 
-                              isActive={pathname.startsWith(item.href) && (item.href !== '/' || pathname === '/')} 
+                              isActive={isLinkActive(item.href)}
                               tooltip={item.label}
                             >
                                 <item.icon />
