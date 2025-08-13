@@ -2,7 +2,7 @@
 'use server';
 import { genkit } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
-import { geminiPro } from '@genkit-ai/googleai';
+import { gemini15Pro } from '@genkit-ai/googleai';
 
 export const ai = genkit({
   plugins: [
@@ -20,4 +20,4 @@ export const ai = genkit({
   traceStore: 'dev',
 });
 
-export const model = geminiPro;
+export const model = gemini15Pro;
