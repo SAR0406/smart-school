@@ -28,7 +28,7 @@ import { generateAdvancedQuiz } from "@/ai/flows/advanced-quiz-flow";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { QuizDisplay } from "./quiz-display";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { AdvancedQuizOutput } from "@/ai/flows/advanced-quiz-flow";
 
 const formSchema = z.object({

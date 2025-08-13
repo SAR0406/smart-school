@@ -8,7 +8,7 @@ import { ChatInterface, type AIPersona } from '@/components/chat-interface';
 import { AdvancedQuizGenerator } from '@/components/advanced-quiz-generator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 const geminiChatPersona: AIPersona = {
   tool: 'gemini-chat',
@@ -49,6 +49,7 @@ export default function GeminiPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Advanced Quiz Generator</CardTitle>
+                    <CardDescription>Use Gemini to generate a custom quiz on any topic.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <AdvancedQuizGenerator />

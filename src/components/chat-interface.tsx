@@ -76,7 +76,7 @@ export function ChatInterface({ persona, initialModel = 'nvidia' }: ChatInterfac
   const { toast } = useToast();
 
   const storageKey = `schoolzen-chat-${persona.tool}-${currentModel}`;
-  const isGeminiEnabled = persona.tool === 'chat' || persona.tool === 'quiz';
+  const isGeminiEnabled = persona.tool === 'chat' || persona.tool === 'quiz' || persona.tool === 'gemini-chat';
   
   // When persona changes, reset the model if gemini isn't enabled for it.
   useEffect(() => {
