@@ -6,13 +6,13 @@ import { Bot, BrainCircuit, Mic, Send, Trash2 } from 'lucide-react';
 
 import { ChatInterface } from '@/components/chat-interface';
 import { AdvancedQuizGenerator } from '@/components/advanced-quiz-generator';
-import { SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function GeminiPage() {
   return (
-    <SidebarInset>
+    <main className="relative flex min-h-svh flex-1 flex-col bg-background">
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
         <div className="flex items-center gap-2">
           <SidebarTrigger className="md:hidden" />
@@ -22,7 +22,7 @@ export default function GeminiPage() {
           </h1>
         </div>
       </header>
-      <main className="flex flex-1 flex-col p-4 sm:p-6 lg:p-8">
+      <div className="flex flex-1 flex-col p-4 sm:p-6 lg:p-8">
         <Tabs defaultValue="chat" className="flex-grow">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="chat">AI Chat</TabsTrigger>
@@ -50,7 +50,7 @@ export default function GeminiPage() {
             </Card>
           </TabsContent>
         </Tabs>
-      </main>
-    </SidebarInset>
+      </div>
+    </main>
   );
 }

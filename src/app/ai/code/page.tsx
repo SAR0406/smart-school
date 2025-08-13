@@ -1,10 +1,10 @@
 import { ChatInterface } from "@/components/chat-interface";
-import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Code } from "lucide-react";
 
 export default function CodePage() {
     return (
-        <SidebarInset>
+        <main className="relative flex min-h-svh flex-1 flex-col bg-background">
             <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
                 <div className="flex items-center gap-2">
                     <SidebarTrigger className="md:hidden" />
@@ -13,7 +13,7 @@ export default function CodePage() {
                     </h1>
                 </div>
             </header>
-            <main className="flex flex-1 flex-col">
+            <div className="flex flex-1 flex-col">
                 <div className="h-[calc(100vh-56px)]">
                     <ChatInterface 
                         tool="code" 
@@ -24,7 +24,7 @@ export default function CodePage() {
                         promptPlaceholder="e.g., 'How do I sort an array in JavaScript?' or paste a code snippet."
                     />
                 </div>
-            </main>
-        </SidebarInset>
+            </div>
+        </main>
     )
 }

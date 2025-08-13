@@ -1,7 +1,7 @@
 import { ArrowRight, BookOpen, Bot, Code, FileText, HelpCircle, MessageSquare, Quote, Shield } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 const tools = [
   {
@@ -72,14 +72,14 @@ const tools = [
 
 export default function AIPage() {
   return (
-    <SidebarInset>
+    <main className="relative flex min-h-svh flex-1 flex-col bg-background">
        <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
         <div className="flex items-center gap-2">
           <SidebarTrigger className="md:hidden" />
           <h1 className="text-lg font-semibold md:text-xl">AI Tools</h1>
         </div>
       </header>
-       <main className="flex-1 space-y-4 p-4 sm:p-6 lg:p-8">
+       <div className="flex-1 space-y-4 p-4 sm:p-6 lg:p-8">
         <div className="text-center">
             <h2 className="text-3xl font-bold text-primary font-headline">Explore the Power of AI</h2>
             <p className="text-muted-foreground mt-2">Choose a tool below to get started with your AI-powered assistant.</p>
@@ -102,7 +102,7 @@ export default function AIPage() {
                 </Link>
             ))}
         </div>
-      </main>
-    </SidebarInset>
+      </div>
+    </main>
   );
 }

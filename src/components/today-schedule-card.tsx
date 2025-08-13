@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -68,7 +69,7 @@ export function TodayScheduleCard() {
   }, [isMounted]);
 
   return (
-    <Card className="h-full flex flex-col">
+    <Card className="h-full flex flex-col transition-all hover:shadow-lg hover:shadow-primary/20">
       <CardHeader>
         <CardTitle className="font-headline text-lg flex items-center gap-2">
           <Calendar className="h-5 w-5 text-primary" />
