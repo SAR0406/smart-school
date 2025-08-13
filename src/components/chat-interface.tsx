@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef, type FormEvent } from "react";
@@ -8,7 +9,6 @@ import {
   Mic,
   Trash2,
   BrainCircuit,
-  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,9 +16,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "./ui/card";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { Card, CardContent, CardFooter, CardHeader } from "./ui/card";
 import {
   Tooltip,
   TooltipContent,
@@ -30,23 +28,13 @@ import { QuizDisplay } from "./quiz-display";
 
 // API and Flow Imports
 import { getNvidiaAIResponse } from "@/lib/api";
-import { helpWithCode } from "@/ai/flows/code-helper-flow";
-import { generateNotes } from "@/ai/flows/notes-flow";
-import { generateQuiz } from "@/ai/flows/quiz-flow";
-import { summarizeText } from "@/ai/flows/summarize-flow";
-import { chat } from "@/ai/flows/chat-flow";
-import { defineTerm } from "@/ai/flows/define-flow";
-import { explainConcept } from "@/ai/flows/explain-flow";
 
 type Message = {
   id: string;
   role: "user" | "assistant";
   content: string | React.ReactNode;
-  tool?: string;
-  model?: AIModel;
 };
 
-type AIModel = "nvidia" | "gemini";
 type AITool = "chat" | "explain" | "define" | "code" | "summary" | "notes" | "quiz";
 
 interface ChatInterfaceProps {
@@ -55,20 +43,9 @@ interface ChatInterfaceProps {
     promptPlaceholder?: string;
 }
 
-const geminiFlows = {
-    chat: chat,
-    explain: explainConcept,
-    define: defineTerm,
-    code: helpWithCode,
-    summary: summarizeText,
-    notes: generateNotes,
-    quiz: generateQuiz
-}
-
 export function ChatInterface({ tool, welcomeMessage, promptPlaceholder }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [model, setModel] = useState<AIModel>("nvidia");
   const [isLoading, setIsLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -84,7 +61,8 @@ export function ChatInterface({ tool, welcomeMessage, promptPlaceholder }: ChatI
         const storedMessages = localStorage.getItem(storageKey);
         if (storedMessages) {
           const parsed = JSON.parse(storedMessages);
-          const validMessages = parsed.filter((m: Message) => typeof m.content === 'string' || (typeof m.content === 'object' && m.content !== null));
+          // Filter out any messages that might have non-serializable content from previous versions
+          const validMessages = parsed.filter((m: Message) => typeof m.content === 'string');
           setMessages(validMessages);
         }
     } catch (e) {
@@ -114,13 +92,8 @@ export function ChatInterface({ tool, welcomeMessage, promptPlaceholder }: ChatI
   useEffect(() => {
     if(!isMounted) return;
     try {
-       const messagesToStore = messages.map(m => {
-           if (typeof m.content !== 'string') {
-               // Don't store complex React nodes
-               return {...m, content: 'Message content cannot be stored.'}
-           }
-           return m;
-       });
+        // Only store messages with string content
+       const messagesToStore = messages.filter(m => typeof m.content === 'string');
        localStorage.setItem(storageKey, JSON.stringify(messagesToStore));
     } catch (e) {
         console.error("Could not save messages to localStorage", e);
@@ -148,7 +121,7 @@ export function ChatInterface({ tool, welcomeMessage, promptPlaceholder }: ChatI
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    const userMessage: Message = { id: Date.now().toString(), role: "user", content: input, model: model };
+    const userMessage: Message = { id: Date.now().toString(), role: "user", content: input };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
@@ -157,31 +130,13 @@ export function ChatInterface({ tool, welcomeMessage, promptPlaceholder }: ChatI
     setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "" }]);
 
     try {
-      if (model === 'nvidia') {
         await getNvidiaAIResponse(tool, input, (chunk) => {
           setMessages((prev) =>
             prev.map((msg) =>
-              msg.id === assistantId ? { ...msg, content: (msg.content as string) + chunk, model: 'nvidia' } : msg
+              msg.id === assistantId ? { ...msg, content: (msg.content as string) + chunk } : msg
             )
           );
         });
-      } else { // Gemini
-        const flow = geminiFlows[tool];
-        if (!flow) throw new Error(`Gemini flow for tool '${tool}' not found.`);
-        const result = await flow(input);
-        
-        let content: string | React.ReactNode = '';
-        if ('response' in result) content = result.response;
-        else if ('summary' in result) content = result.summary;
-        else if ('notes' in result) content = result.notes;
-        else if ('quiz' in result) {
-            content = <QuizDisplay quizData={result.quiz} topic={input} />;
-        } else {
-            content = "Unsupported response format from Gemini.";
-        }
-        
-        setMessages(prev => prev.map(msg => msg.id === assistantId ? {...msg, content: content, model: 'gemini'} : msg));
-      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
       setMessages((prev) =>
@@ -199,17 +154,9 @@ export function ChatInterface({ tool, welcomeMessage, promptPlaceholder }: ChatI
     if (typeof message.content !== 'string') {
       return message.content;
     }
-     if (tool === 'quiz' && (message.content.includes('{') || message.model === 'gemini')) {
-      try {
-        const jsonString = message.content.substring(message.content.indexOf('{'), message.content.lastIndexOf('}') + 1);
-        const quizData = JSON.parse(jsonString);
-        if (quizData.quiz) {
-            return <QuizDisplay quizData={quizData.quiz} topic="Quiz" />;
-        }
-      } catch (e) {
-        // Not valid JSON, fall back to markdown
-      }
-    }
+     if (tool === 'quiz' && message.role === 'assistant') {
+        return <QuizDisplay quizText={message.content as string} topic="Quiz" />;
+     }
     return <ReactMarkdown className="prose dark:prose-invert max-w-full">{message.content}</ReactMarkdown>;
   };
 
@@ -226,18 +173,8 @@ export function ChatInterface({ tool, welcomeMessage, promptPlaceholder }: ChatI
       <Card className="h-full flex flex-col rounded-lg shadow-lg">
         <CardHeader className="flex flex-row items-center justify-between border-b gap-2">
            <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2">
-              <Label htmlFor="model-switch" className="flex items-center gap-1.5 text-sm font-medium">
-                <BrainCircuit className="h-5 w-5 text-gray-400" /> NVIDIA
-              </Label>
-              <Switch
-                id="model-switch"
-                checked={model === 'gemini'}
-                onCheckedChange={(checked) => setModel(checked ? 'gemini' : 'nvidia')}
-              />
-              <Label htmlFor="model-switch" className="flex items-center gap-1.5 text-sm font-medium">
-                <Sparkles className="h-5 w-5 text-yellow-400" /> Gemini
-              </Label>
+            <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+                <BrainCircuit className="h-5 w-5 text-primary" /> AI Model: NVIDIA
             </div>
           </div>
           <Tooltip>
@@ -264,8 +201,8 @@ export function ChatInterface({ tool, welcomeMessage, promptPlaceholder }: ChatI
                 <div key={message.id} className={cn("flex items-start gap-3", message.role === "user" ? "justify-end" : "justify-start")}>
                   {message.role === "assistant" && (
                     <Avatar className="h-8 w-8">
-                      <AvatarFallback className={cn("bg-primary text-primary-foreground", message.model === 'gemini' && 'bg-yellow-500')}>
-                        {message.model === 'gemini' ? <Sparkles/> : <Bot />}
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        <Bot />
                       </AvatarFallback>
                     </Avatar>
                   )}

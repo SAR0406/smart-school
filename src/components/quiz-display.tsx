@@ -1,15 +1,73 @@
+
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
+import { Loader2 } from "lucide-react";
 
-export function QuizDisplay({ quizData, topic }: { quizData: any[], topic: string }) {
+// Represents the parsed structure of a quiz question
+interface QuizQuestion {
+    question: string;
+    options: string[];
+    correctAnswerIndex: number;
+}
+
+// Function to parse raw text into a structured quiz format
+const parseQuizText = (text: string): QuizQuestion[] => {
+    if (!text || text.trim() === '') return [];
+    try {
+        // First, try to parse it as a JSON object, which might be what Gemini returns
+        const jsonString = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
+        const parsedJson = JSON.parse(jsonString);
+        if (parsedJson.quiz && Array.isArray(parsedJson.quiz)) {
+            return parsedJson.quiz.map((q: any) => ({
+                question: q.question || '',
+                options: Array.isArray(q.options) && q.options.length > 0 ? q.options : ['A', 'B', 'C', 'D'],
+                correctAnswerIndex: typeof q.correctAnswerIndex === 'number' ? q.correctAnswerIndex : 0,
+            }));
+        }
+    } catch (e) {
+        // If JSON parsing fails, fall back to regex for plain text
+    }
+
+    const questions: QuizQuestion[] = [];
+    // This regex looks for questions, options, and an answer line.
+    const questionBlocks = text.split(/\n\s*\n/);
+
+    questionBlocks.forEach(block => {
+        const questionMatch = block.match(/^(?:\d+\.\s*)?(.+?)\n/);
+        const optionsMatch = Array.from(block.matchAll(/([A-Da-d][.)]\s*.+)/g));
+        const answerMatch = block.match(/Answer:\s*([A-D])/i);
+
+        if (questionMatch && optionsMatch.length >= 2 && answerMatch) {
+            const questionText = questionMatch[1].trim();
+            const options = optionsMatch.map(o => o[1].trim().replace(/^[A-Da-d][.)]\s*/, ''));
+            const correctAnswerLetter = answerMatch[1].toUpperCase();
+            const correctAnswerIndex = "ABCD".indexOf(correctAnswerLetter);
+            
+            if(options.length === 4 && correctAnswerIndex !== -1){
+                questions.push({
+                    question: questionText,
+                    options,
+                    correctAnswerIndex,
+                });
+            }
+        }
+    });
+
+    return questions;
+};
+
+
+export function QuizDisplay({ quizText, topic }: { quizText: string, topic: string }) {
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState(0);
+
+  const quizData = useMemo(() => parseQuizText(quizText), [quizText]);
 
   const handleSubmit = () => {
     let correctCount = 0;
@@ -27,6 +85,40 @@ export function QuizDisplay({ quizData, topic }: { quizData: any[], topic: strin
       setSubmitted(false);
       setScore(0);
   }
+
+  // Handle loading state while text is streaming in
+  if (quizData.length === 0 && quizText.length > 0) {
+    return (
+        <Card className="mt-4">
+            <CardHeader>
+                <CardTitle>Quiz on {topic}</CardTitle>
+            </CardHeader>
+            <CardContent className="flex items-center justify-center p-8 space-x-2 text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span>Generating quiz...</span>
+            </CardContent>
+        </Card>
+    );
+  }
+  
+  // Handle case where no valid questions could be parsed
+   if (quizData.length === 0 && quizText.length > 0) {
+    return (
+        <Card className="mt-4">
+             <CardHeader>
+                <CardTitle>Quiz on {topic}</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <p className="text-destructive">Could not parse the quiz questions from the response.</p>
+                <pre className="mt-4 p-2 bg-muted rounded-md text-xs whitespace-pre-wrap">{quizText}</pre>
+            </CardContent>
+        </Card>
+    );
+  }
+
+  // Do not render anything if there's no text at all
+  if (quizData.length === 0) return null;
+
 
   return (
     <Card className="mt-4">
