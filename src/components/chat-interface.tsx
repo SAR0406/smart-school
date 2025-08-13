@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useRef, type FormEvent } from "react";
@@ -10,6 +9,7 @@ import {
   Mic,
   Trash2,
   BrainCircuit,
+  type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -40,23 +40,31 @@ type Message = {
   content: string | React.ReactNode;
 };
 
-type AITool = "chat" | "explain" | "define" | "code" | "summary" | "notes" | "quiz" | "jarvis" | "gemini-chat";
+type AITool = "chat" | "explain" | "define" | "code" | "summary" | "notes" | "quiz" | "myai" | "gemini-chat";
 type AIModel = "nvidia" | "gemini";
+
+export interface AIPersona {
+    tool: AITool;
+    title: string;
+    description: string;
+    icon: LucideIcon;
+    color: string;
+    bgColor: string;
+    welcome: { title: string; message: string };
+    promptPlaceholder?: string;
+}
 
 
 interface ChatInterfaceProps {
-    tool: AITool;
-    welcomeMessage: { title: string; message: string };
-    promptPlaceholder?: string;
-    model?: AIModel;
+    persona: AIPersona;
+    initialModel?: AIModel;
 }
 
 const geminiFlows = {
-    // This is now simplified as we only have one Gemini flow for chat
     "gemini-chat": chatWithGemini,
 }
 
-export function ChatInterface({ tool, welcomeMessage, promptPlaceholder, model: initialModel = 'nvidia' }: ChatInterfaceProps) {
+export function ChatInterface({ persona, initialModel = 'nvidia' }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -67,7 +75,17 @@ export function ChatInterface({ tool, welcomeMessage, promptPlaceholder, model: 
   const recognitionRef = useRef<any>(null);
   const { toast } = useToast();
 
-  const storageKey = `schoolzen-chat-${tool}-${currentModel}`;
+  const storageKey = `schoolzen-chat-${persona.tool}-${currentModel}`;
+  const isGeminiEnabled = persona.tool === 'chat' || persona.tool === 'quiz';
+  
+  // When persona changes, reset the model if gemini isn't enabled for it.
+  useEffect(() => {
+    if (!isGeminiEnabled && currentModel === 'gemini') {
+        setCurrentModel('nvidia');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [persona.tool]);
+
 
   useEffect(() => {
     setIsMounted(true);
@@ -157,7 +175,7 @@ export function ChatInterface({ tool, welcomeMessage, promptPlaceholder, model: 
     try {
         if (currentModel === 'gemini') {
             const flow = geminiFlows["gemini-chat"];
-            if (!flow) throw new Error(`Invalid tool for Gemini: ${tool}`);
+            if (!flow) throw new Error(`Invalid tool for Gemini: ${persona.tool}`);
             
             const result = await flow(currentInput);
             const content = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
@@ -168,7 +186,7 @@ export function ChatInterface({ tool, welcomeMessage, promptPlaceholder, model: 
                 )
             );
         } else { // NVIDIA
-            await getNvidiaAIResponse(tool, currentInput, (chunk) => {
+            await getNvidiaAIResponse(persona.tool, currentInput, (chunk) => {
                 setMessages((prev) =>
                     prev.map((msg) =>
                     msg.id === assistantId ? { ...msg, content: (msg.content as string) + chunk } : msg
@@ -194,11 +212,11 @@ export function ChatInterface({ tool, welcomeMessage, promptPlaceholder, model: 
       return message.content;
     }
      // For NVIDIA quiz, we need to parse the plain text.
-     if (tool === 'quiz' && message.role === 'assistant' && message.content.includes('1.')) {
+     if (persona.tool === 'quiz' && message.role === 'assistant' && message.content.includes('1.')) {
         return <QuizDisplay quizText={message.content as string} topic="Quiz" />;
      }
      // For Gemini quiz, it might return a JSON string
-     if ((tool === 'gemini-chat' || tool === 'quiz') && message.role === 'assistant' && message.content.includes('question')) {
+     if ((persona.tool === 'gemini-chat' || persona.tool === 'quiz') && message.role === 'assistant' && message.content.includes('question')) {
         return <QuizDisplay quizText={message.content as string} topic="Quiz" />;
      }
     return <ReactMarkdown className="prose dark:prose-invert max-w-full">{message.content}</ReactMarkdown>;
@@ -210,20 +228,18 @@ export function ChatInterface({ tool, welcomeMessage, promptPlaceholder, model: 
 
   if (!isMounted) {
     return (
-        <Card className="h-full flex flex-col items-center justify-center">
+      <div className="h-full flex flex-col items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </Card>
+        </div>
     );
   }
-
-  const isGeminiEnabled = tool === 'chat' || tool === 'quiz';
 
   return (
     <TooltipProvider>
       <div className="h-full flex flex-col rounded-lg">
         <header className="flex flex-row items-center justify-between gap-2 p-4 border-b">
            <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+            <div className="hidden md:flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
                 <BrainCircuit className="h-5 w-5 text-primary" /> AI Model: <span className="capitalize font-semibold text-foreground">{currentModel}</span>
             </div>
           </div>
@@ -251,17 +267,17 @@ export function ChatInterface({ tool, welcomeMessage, promptPlaceholder, model: 
             <div className="space-y-4 p-4 md:p-6">
                {messages.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
-                        <Bot className="h-12 w-12 mb-4" />
-                        <p className="text-lg font-semibold">{welcomeMessage.title}</p>
-                        <p>{welcomeMessage.message}</p>
+                        <persona.icon className={cn("h-12 w-12 mb-4", persona.color)} />
+                        <p className="text-lg font-semibold">{persona.welcome.title}</p>
+                        <p>{persona.welcome.message}</p>
                     </div>
                 )}
               {messages.map((message) => (
                 <div key={message.id} className={cn("flex items-start gap-3", message.role === "user" ? "justify-end" : "justify-start")}>
                   {message.role === "assistant" && (
                     <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-primary text-primary-foreground">
-                        <Bot />
+                      <AvatarFallback className={cn("text-white", persona.bgColor)}>
+                        <persona.icon className={cn("h-5 w-5", persona.color)} />
                       </AvatarFallback>
                     </Avatar>
                   )}
@@ -281,7 +297,7 @@ export function ChatInterface({ tool, welcomeMessage, promptPlaceholder, model: 
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={isListening ? "Listening..." : promptPlaceholder || 'Message your AI assistant...'}
+              placeholder={isListening ? "Listening..." : persona.promptPlaceholder || 'Message your AI assistant...'}
               className="flex-grow resize-none"
               rows={1}
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { handleSubmit(e); } }}

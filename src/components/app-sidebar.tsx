@@ -28,8 +28,9 @@ export function AppSidebar() {
     if (href === "/") {
         return pathname === "/";
     }
-    if (href === "/ai") {
-        return pathname === "/ai";
+    // For top-level links like /ai, we want an exact match.
+    if (href === "/ai" || href === "/gemini" || href === "/ai/scanner") {
+      return pathname === href;
     }
     return pathname.startsWith(href);
   };
