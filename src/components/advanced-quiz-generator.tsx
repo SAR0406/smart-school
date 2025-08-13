@@ -9,7 +9,6 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -20,13 +19,12 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { generateAdvancedQuiz, AdvancedQuizInput } from "@/ai/flows/advanced-quiz-flow";
+import { generateAdvancedQuiz, type AdvancedQuizInput, type AdvancedQuizOutput } from "@/ai/flows/advanced-quiz-flow";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { QuizDisplay } from "./quiz-display";
@@ -40,7 +38,7 @@ const formSchema = z.object({
 });
 
 export function AdvancedQuizGenerator() {
-  const [quizResult, setQuizResult] = useState<string | null>(null);
+  const [quizData, setQuizData] = useState<AdvancedQuizOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -56,10 +54,10 @@ export function AdvancedQuizGenerator() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    setQuizResult(null);
+    setQuizData(null);
     try {
       const result = await generateAdvancedQuiz(values as AdvancedQuizInput);
-      setQuizResult(JSON.stringify(result));
+      setQuizData(result);
     } catch (error) {
       console.error("Failed to generate quiz:", error);
       toast({
@@ -149,9 +147,21 @@ export function AdvancedQuizGenerator() {
         </form>
       </Form>
       
-      {quizResult && (
+      {isLoading && (
+         <Card className="mt-8">
+            <CardHeader>
+                <CardTitle>Quiz on {form.getValues('topic')}</CardTitle>
+            </CardHeader>
+            <CardContent className="flex items-center justify-center p-8 space-x-2 text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span>Generating quiz...</span>
+            </CardContent>
+        </Card>
+      )}
+
+      {quizData && !isLoading && (
         <div className="mt-8">
-            <QuizDisplay quizText={quizResult} topic={form.getValues('topic')} />
+            <QuizDisplay quizData={quizData} topic={form.getValues('topic')} />
         </div>
       )}
     </div>

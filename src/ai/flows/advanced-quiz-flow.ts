@@ -20,16 +20,16 @@ const AdvancedQuizInputSchema = z.object({
     .optional()
     .describe('Any custom instructions for the quiz generation.'),
 });
-type AdvancedQuizInput = z.infer<typeof AdvancedQuizInputSchema>;
+export type AdvancedQuizInput = z.infer<typeof AdvancedQuizInputSchema>;
 
 const QuizQuestionSchema = z.object({
-  question: z.string(),
-  options: z.array(z.string()).optional(),
-  correctAnswer: z.string(),
+  question: z.string().describe('The text of the question.'),
+  options: z.array(z.string()).optional().describe('An array of possible answers. Required for multiple-choice and true/false.'),
+  correctAnswer: z.string().describe('The correct answer. For multiple choice, it must be one of the strings from the options array. For true/false, it must be "True" or "False".'),
 });
 
-const AdvancedQuizOutputSchema = z.object({
-  quiz: z.array(QuizQuestionSchema),
+export const AdvancedQuizOutputSchema = z.object({
+  quiz: z.array(QuizQuestionSchema).describe('An array of quiz questions.'),
 });
 export type AdvancedQuizOutput = z.infer<typeof AdvancedQuizOutputSchema>;
 
@@ -39,7 +39,7 @@ const quizGenerationPrompt = ai.definePrompt({
     output: { schema: AdvancedQuizOutputSchema },
     model: gemini15Flash,
     prompt: `
-      You must start every response with a relevant emoji.
+      You are an expert quiz creator. You must start every response with a relevant emoji.
       Generate a quiz based on the following criteria:
       Topic: {{{topic}}}
       Number of Questions: {{{numQuestions}}}
@@ -48,10 +48,10 @@ const quizGenerationPrompt = ai.definePrompt({
       Custom Instructions: {{{customInstructions}}}
       {{/if}}
 
-      The quiz should follow the provided output JSON schema precisely.
-      For multiple choice questions, provide 4 options.
-      For true/false, options should be "True" and "False".
-      For short answer, the 'options' array can be empty.
+      The quiz must follow the provided output JSON schema precisely.
+      - For 'multiple_choice', provide exactly 4 options. The 'correctAnswer' must be one of the provided options.
+      - For 'true_false', the 'options' array must be ["True", "False"]. The 'correctAnswer' must be either "True" or "False".
+      - For 'short_answer', the 'options' array should be empty. The 'correctAnswer' should be the expected short answer.
     `,
 });
 
@@ -70,5 +70,9 @@ const generateAdvancedQuizFlow = ai.defineFlow(
 
 
 export async function generateAdvancedQuiz(input: AdvancedQuizInput): Promise<AdvancedQuizOutput> {
-  return await generateAdvancedQuizFlow(input);
+  const result = await generateAdvancedQuizFlow(input);
+  if (!result) {
+    throw new Error("The AI failed to generate a quiz. Please try again.");
+  }
+  return result;
 }

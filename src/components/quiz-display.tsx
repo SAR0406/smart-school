@@ -7,72 +7,91 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { Loader2 } from "lucide-react";
+import type { AdvancedQuizOutput } from "@/ai/flows/advanced-quiz-flow";
 
-// Represents the parsed structure of a quiz question
-interface QuizQuestion {
-    question: string;
-    options: string[];
-    correctAnswerIndex: number;
-}
-
-// Function to parse raw text into a structured quiz format
-const parseQuizText = (text: string): QuizQuestion[] => {
-    if (!text || text.trim() === '') return [];
+// Helper function to safely parse stringified JSON
+const safelyParseJson = (jsonString: string): any | null => {
     try {
-        // First, try to parse it as a JSON object, which might be what Gemini returns
-        const jsonString = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
-        const parsedJson = JSON.parse(jsonString);
-        if (parsedJson.quiz && Array.isArray(parsedJson.quiz)) {
-            return parsedJson.quiz.map((q: any) => ({
-                question: q.question || '',
-                options: Array.isArray(q.options) && q.options.length > 0 ? q.options : ['A', 'B', 'C', 'D'],
-                correctAnswerIndex: typeof q.correctAnswerIndex === 'number' ? q.correctAnswerIndex : 0,
-            }));
-        }
-    } catch (e) {
-        // If JSON parsing fails, fall back to regex for plain text
+        return JSON.parse(jsonString);
+    } catch (error) {
+        return null;
     }
-
-    const questions: QuizQuestion[] = [];
-    // This regex looks for questions, options, and an answer line.
-    const questionBlocks = text.split(/\n\s*\n/);
-
-    questionBlocks.forEach(block => {
-        const questionMatch = block.match(/^(?:\d+\.\s*)?(.+?)\n/);
-        const optionsMatch = Array.from(block.matchAll(/([A-Da-d][.)]\s*.+)/g));
-        const answerMatch = block.match(/Answer:\s*([A-D])/i);
-
-        if (questionMatch && optionsMatch.length >= 2 && answerMatch) {
-            const questionText = questionMatch[1].trim();
-            const options = optionsMatch.map(o => o[1].trim().replace(/^[A-Da-d][.)]\s*/, ''));
-            const correctAnswerLetter = answerMatch[1].toUpperCase();
-            const correctAnswerIndex = "ABCD".indexOf(correctAnswerLetter);
-            
-            if(options.length === 4 && correctAnswerIndex !== -1){
-                questions.push({
-                    question: questionText,
-                    options,
-                    correctAnswerIndex,
-                });
-            }
-        }
-    });
-
-    return questions;
 };
 
+interface QuizQuestion {
+    question: string;
+    options?: string[];
+    correctAnswer: string;
+}
 
-export function QuizDisplay({ quizText, topic }: { quizText: string, topic: string }) {
-  const [answers, setAnswers] = useState<Record<number, number>>({});
+interface QuizDisplayProps {
+  // Can accept either a structured object or a raw string for backward compatibility
+  quizData?: AdvancedQuizOutput | null;
+  quizText?: string | null;
+  topic: string;
+}
+
+// The main component
+export function QuizDisplay({ quizData: initialQuizData, quizText, topic }: QuizDisplayProps) {
+  const [answers, setAnswers] = useState<Record<number, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState(0);
 
-  const quizData = useMemo(() => parseQuizText(quizText), [quizText]);
+  // Memoize the parsed quiz data to avoid re-computation
+  const quizData: QuizQuestion[] | null = useMemo(() => {
+    let dataToParse = initialQuizData;
+
+    // If we receive text, try to parse it
+    if (quizText) {
+        const parsed = safelyParseJson(quizText);
+        if (parsed && parsed.quiz) {
+            dataToParse = parsed;
+        }
+    }
+    
+    if (dataToParse && Array.isArray(dataToParse.quiz)) {
+      return dataToParse.quiz;
+    }
+
+    return null;
+  }, [initialQuizData, quizText]);
+
+  // Handle loading state
+  if (!quizData) {
+     if (quizText === null || quizText === undefined) return null; // Don't render if there's no data at all
+
+     return (
+        <Card className="mt-4">
+            <CardHeader>
+                <CardTitle>Quiz on {topic}</CardTitle>
+            </CardHeader>
+            <CardContent className="flex items-center justify-center p-8 space-x-2 text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span>Parsing quiz...</span>
+            </CardContent>
+        </Card>
+    );
+  }
+
+  // Handle case where parsing failed
+  if (quizData.length === 0) {
+     return (
+        <Card className="mt-4">
+             <CardHeader>
+                <CardTitle>Quiz on {topic}</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <p className="text-destructive">Could not parse the quiz questions from the AI's response.</p>
+                {quizText && <pre className="mt-4 p-2 bg-muted rounded-md text-xs whitespace-pre-wrap">{quizText}</pre>}
+            </CardContent>
+        </Card>
+    );
+  }
 
   const handleSubmit = () => {
     let correctCount = 0;
     quizData.forEach((q, index) => {
-      if (answers[index] === q.correctAnswerIndex) {
+      if (answers[index] === q.correctAnswer) {
         correctCount++;
       }
     });
@@ -85,40 +104,6 @@ export function QuizDisplay({ quizText, topic }: { quizText: string, topic: stri
       setSubmitted(false);
       setScore(0);
   }
-
-  // Handle loading state while text is streaming in
-  if (quizData.length === 0 && quizText.length > 0) {
-    return (
-        <Card className="mt-4">
-            <CardHeader>
-                <CardTitle>Quiz on {topic}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex items-center justify-center p-8 space-x-2 text-muted-foreground">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                <span>Generating quiz...</span>
-            </CardContent>
-        </Card>
-    );
-  }
-  
-  // Handle case where no valid questions could be parsed
-   if (quizData.length === 0 && quizText.length > 0) {
-    return (
-        <Card className="mt-4">
-             <CardHeader>
-                <CardTitle>Quiz on {topic}</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <p className="text-destructive">Could not parse the quiz questions from the response.</p>
-                <pre className="mt-4 p-2 bg-muted rounded-md text-xs whitespace-pre-wrap">{quizText}</pre>
-            </CardContent>
-        </Card>
-    );
-  }
-
-  // Do not render anything if there's no text at all
-  if (quizData.length === 0) return null;
-
 
   return (
     <Card className="mt-4">
@@ -166,28 +151,32 @@ export function QuizDisplay({ quizText, topic }: { quizText: string, topic: stri
                 <div className="space-y-6">
                 {quizData.map((q, qIndex) => (
                     <div key={qIndex}>
-                    <p className="font-semibold mb-2">{qIndex + 1}. {q.question}</p>
-                    <RadioGroup
-                        onValueChange={(value) =>
-                        setAnswers((prev) => ({ ...prev, [qIndex]: parseInt(value) }))
-                        }
-                    >
-                        {q.options.map((option: string, oIndex: number) => (
-                        <div key={oIndex} className="flex items-center space-x-2">
-                            <RadioGroupItem value={oIndex.toString()} id={`q${qIndex}o${oIndex}`} />
-                            <Label htmlFor={`q${qIndex}o${oIndex}`}>{option}</Label>
-                        </div>
-                        ))}
-                    </RadioGroup>
+                        <p className="font-semibold mb-2">{qIndex + 1}. {q.question}</p>
+                        {q.options && q.options.length > 0 ? (
+                             <RadioGroup
+                                onValueChange={(value) =>
+                                setAnswers((prev) => ({ ...prev, [qIndex]: value }))
+                                }
+                                value={answers[qIndex]}
+                            >
+                                {q.options.map((option, oIndex) => (
+                                    <div key={oIndex} className="flex items-center space-x-2">
+                                        <RadioGroupItem value={option} id={`q${qIndex}o${oIndex}`} />
+                                        <Label htmlFor={`q${qIndex}o${oIndex}`}>{option}</Label>
+                                    </div>
+                                ))}
+                            </RadioGroup>
+                        ) : (
+                            <p className="text-sm text-muted-foreground">This is a short answer question. The answer will be revealed after submission.</p>
+                        )}
                     </div>
                 ))}
-                
                 </div>
             )}
         </CardContent>
         {!submitted && (
              <CardFooter>
-                <Button onClick={handleSubmit} disabled={Object.keys(answers).length !== quizData.length}>
+                <Button onClick={handleSubmit} disabled={Object.keys(answers).length !== quizData.filter(q => q.options && q.options.length > 0).length}>
                     Submit Quiz
                 </Button>
             </CardFooter>
