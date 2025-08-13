@@ -5,7 +5,7 @@
  * It allows for specifying the number of questions, question type,
  * and custom instructions.
  */
-import { ai, model } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
 export const AdvancedQuizInputSchema = z.object({
