@@ -9,6 +9,7 @@ import { ai } from '@/ai/genkit';
 import { gemini15Flash } from '@genkit-ai/googleai';
 import { z } from 'zod';
 
+// Input Schema: Defines the data structure the flow expects.
 const AdvancedQuizInputSchema = z.object({
   topic: z.string().describe('The topic of the quiz.'),
   numQuestions: z.number().describe('The number of questions to generate.'),
@@ -22,17 +23,21 @@ const AdvancedQuizInputSchema = z.object({
 });
 export type AdvancedQuizInput = z.infer<typeof AdvancedQuizInputSchema>;
 
+
+// Output Schema: Defines the data structure the flow will return.
 const QuizQuestionSchema = z.object({
   question: z.string().describe('The text of the question.'),
   options: z.array(z.string()).optional().describe('An array of possible answers. Required for multiple-choice and true/false.'),
   correctAnswer: z.string().describe('The correct answer. For multiple choice, it must be one of the strings from the options array. For true/false, it must be "True" or "False".'),
 });
 
-export const AdvancedQuizOutputSchema = z.object({
+const AdvancedQuizOutputSchema = z.object({
   quiz: z.array(QuizQuestionSchema).describe('An array of quiz questions.'),
 });
 export type AdvancedQuizOutput = z.infer<typeof AdvancedQuizOutputSchema>;
 
+
+// Prompt Definition: Configures the AI prompt with schemas and instructions.
 const quizGenerationPrompt = ai.definePrompt({
     name: 'advancedQuizPrompt',
     input: { schema: AdvancedQuizInputSchema },
@@ -56,6 +61,7 @@ const quizGenerationPrompt = ai.definePrompt({
 });
 
 
+// Flow Definition: The main logic that executes the prompt.
 const generateAdvancedQuizFlow = ai.defineFlow(
   {
     name: 'generateAdvancedQuizFlow',
@@ -69,6 +75,7 @@ const generateAdvancedQuizFlow = ai.defineFlow(
 );
 
 
+// Exported Function: The only function exposed to the client.
 export async function generateAdvancedQuiz(input: AdvancedQuizInput): Promise<AdvancedQuizOutput> {
   const result = await generateAdvancedQuizFlow(input);
   if (!result) {
