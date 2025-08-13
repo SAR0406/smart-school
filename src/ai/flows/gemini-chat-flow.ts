@@ -7,7 +7,8 @@ import { ai } from '@/ai/genkit';
 import { gemini15Pro } from '@genkit-ai/googleai';
 
 export async function chatWithGemini(prompt: string): Promise<string> {
-  const anwser = await gemini15Pro.generate({
+  const anwser = await ai.generate({
+    model: gemini15Pro,
     prompt,
     history: [],
   });
