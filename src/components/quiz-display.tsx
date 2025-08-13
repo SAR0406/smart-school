@@ -7,7 +7,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { Loader2 } from "lucide-react";
-import type { AdvancedQuizOutput } from "@/ai/flows/advanced-quiz-flow";
 
 // Helper function to safely parse stringified JSON
 const safelyParseJson = (jsonString: string): any | null => {
@@ -23,6 +22,11 @@ interface QuizQuestion {
     options?: string[];
     correctAnswer: string;
 }
+
+interface AdvancedQuizOutput {
+    quiz: QuizQuestion[];
+}
+
 
 interface QuizDisplayProps {
   // Can accept either a structured object or a raw string for backward compatibility
