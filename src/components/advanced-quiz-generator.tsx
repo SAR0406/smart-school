@@ -25,12 +25,11 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { generateAdvancedQuiz } from "@/ai/flows/advanced-quiz-flow";
-import type { AdvancedQuizOutput } from "@/ai/flows/advanced-quiz-flow";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { QuizDisplay } from "./quiz-display";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-
+import type { AdvancedQuizOutput } from "@/ai/flows/advanced-quiz-flow";
 
 const formSchema = z.object({
   topic: z.string().min(3, { message: "Topic must be at least 3 characters long." }),

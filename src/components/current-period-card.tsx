@@ -80,7 +80,7 @@ export function CurrentPeriodCard() {
   return (
     <Card className="transition-all hover:shadow-lg hover:shadow-primary/20">
       <CardHeader>
-        <CardTitle className="font-headline text-lg flex items-center justify-between">
+        <CardTitle className="flex items-center justify-between">
           <span>Current Status</span>
            <div className="relative">
              <span className={cn("absolute -inset-1.5 rounded-full animate-ping", color)}></span>

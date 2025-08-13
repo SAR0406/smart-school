@@ -71,7 +71,7 @@ export function TodayScheduleCard() {
   return (
     <Card className="h-full flex flex-col transition-all hover:shadow-lg hover:shadow-primary/20">
       <CardHeader>
-        <CardTitle className="font-headline text-lg flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2">
           <Calendar className="h-5 w-5 text-primary" />
           Today's Schedule
         </CardTitle>
@@ -119,7 +119,7 @@ export function TodayScheduleCard() {
             </DialogTrigger>
             <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
                 <DialogHeader>
-                    <DialogTitle className="font-headline text-2xl font-semibold">Full Week Schedule</DialogTitle>
+                    <DialogTitle>Full Week Schedule</DialogTitle>
                 </DialogHeader>
                 <div className="flex-grow min-h-0">
                     <FullWeekSchedule />

@@ -42,7 +42,7 @@ export default function GeminiPage() {
           <TabsContent value="quiz" className="mt-4">
             <Card>
                 <CardHeader>
-                    <CardTitle className="font-headline">Advanced Quiz Generator</CardTitle>
+                    <CardTitle>Advanced Quiz Generator</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <AdvancedQuizGenerator />

@@ -69,7 +69,7 @@ export function SubjectSearch() {
   return (
     <Card className="h-full flex flex-col">
       <CardHeader>
-        <CardTitle className="font-headline text-lg flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2">
           <Search className="h-5 w-5 text-primary" />
           Search Schedule
         </CardTitle>
