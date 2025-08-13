@@ -220,8 +220,8 @@ export function ChatInterface({ tool, welcomeMessage, promptPlaceholder, model: 
 
   return (
     <TooltipProvider>
-      <Card className="h-full flex flex-col rounded-lg shadow-lg">
-        <CardHeader className="flex flex-row items-center justify-between border-b gap-2">
+      <div className="h-full flex flex-col rounded-lg">
+        <header className="flex flex-row items-center justify-between gap-2 p-4 border-b">
            <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
                 <BrainCircuit className="h-5 w-5 text-primary" /> AI Model: <span className="capitalize font-semibold text-foreground">{currentModel}</span>
@@ -245,10 +245,10 @@ export function ChatInterface({ tool, welcomeMessage, promptPlaceholder, model: 
                 <TooltipContent><p>Clear Chat</p></TooltipContent>
             </Tooltip>
           </div>
-        </CardHeader>
-        <CardContent className="flex-grow overflow-hidden p-4 md:p-6">
+        </header>
+        <main className="flex-grow overflow-hidden">
           <ScrollArea className="h-full pr-4" ref={scrollAreaRef}>
-            <div className="space-y-4">
+            <div className="space-y-4 p-4 md:p-6">
                {messages.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
                         <Bot className="h-12 w-12 mb-4" />
@@ -265,7 +265,7 @@ export function ChatInterface({ tool, welcomeMessage, promptPlaceholder, model: 
                       </AvatarFallback>
                     </Avatar>
                   )}
-                  <div className={cn("max-w-[80%] rounded-xl p-3 text-sm", message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted")}>
+                  <div className={cn("max-w-[80%] rounded-lg p-3 text-sm", message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted")}>
                     {isLoading && message.content === "" ? <Loader2 className="h-5 w-5 animate-spin" /> : renderMessageContent(message)}
                   </div>
                   {message.role === "user" && (
@@ -275,8 +275,8 @@ export function ChatInterface({ tool, welcomeMessage, promptPlaceholder, model: 
               ))}
             </div>
           </ScrollArea>
-        </CardContent>
-        <CardFooter className="border-t pt-4">
+        </main>
+        <footer className="border-t p-4">
           <form onSubmit={handleSubmit} className="flex w-full items-center gap-2">
             <Textarea
               value={input}
@@ -303,8 +303,8 @@ export function ChatInterface({ tool, welcomeMessage, promptPlaceholder, model: 
               <span className="sr-only">Send message</span>
             </Button>
           </form>
-        </CardFooter>
-      </Card>
+        </footer>
+      </div>
     </TooltipProvider>
   );
 }
