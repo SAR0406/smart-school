@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -54,16 +53,16 @@ export function CurrentPeriodCard() {
 
   const getStatusInfo = (status?: 'ongoing' | 'break' | 'finished') => {
     switch (status) {
-      case 'ongoing': return { emoji: '📖', color: 'bg-green-500' };
-      case 'break': return { emoji: '☕', color: 'bg-yellow-500' };
-      case 'finished': return { emoji: '✅', color: 'bg-blue-500' };
-      default: return { emoji: '…', color: 'bg-gray-500' };
+      case 'ongoing': return { emoji: '📖', color: 'bg-green-500/20 text-green-700 dark:bg-green-500/10 dark:text-green-400', ringColor: 'ring-green-500/50' };
+      case 'break': return { emoji: '☕', color: 'bg-yellow-500/20 text-yellow-700 dark:bg-yellow-500/10 dark:text-yellow-400', ringColor: 'ring-yellow-500/50' };
+      case 'finished': return { emoji: '✅', color: 'bg-blue-500/20 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400', ringColor: 'ring-blue-500/50' };
+      default: return { emoji: '…', color: 'bg-gray-500/20 text-gray-700 dark:bg-gray-500/10 dark:text-gray-400', ringColor: 'ring-gray-500/50' };
     }
   }
 
   if (isLoading) {
     return (
-      <Card className="transition-all hover:shadow-lg hover:shadow-primary/20">
+      <Card>
         <CardHeader>
           <Skeleton className="h-6 w-3/4" />
         </CardHeader>
@@ -75,19 +74,16 @@ export function CurrentPeriodCard() {
     );
   }
 
-  const { emoji, color } = getStatusInfo(period?.status);
+  const { emoji, color, ringColor } = getStatusInfo(period?.status);
 
   return (
-    <Card className="transition-all hover:shadow-lg hover:shadow-primary/20">
+    <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>Current Status</span>
-           <div className="relative">
-             <span className={cn("absolute -inset-1.5 rounded-full animate-ping", color)}></span>
-             <span className={cn("relative inline-flex items-center justify-center h-8 w-8 rounded-full text-lg", color)}>
+           <div className={cn("flex items-center justify-center h-8 w-8 rounded-full text-lg ring-4 ring-offset-2 ring-offset-card", color, ringColor)}>
                 {emoji}
-             </span>
-          </div>
+            </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
