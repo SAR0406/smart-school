@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -11,11 +11,10 @@ import { CameraCapture } from "@/components/camera-capture";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle, Upload, FileImage, Loader2, Wand2 } from "lucide-react";
+import { Upload, FileImage, Loader2, Wand2, X, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 
@@ -40,7 +39,7 @@ export function DocumentScanner() {
     },
   });
 
-  const onDrop = (acceptedFiles: File[]) => {
+  const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (file && file.type.startsWith('image/')) {
       const reader = new FileReader();
@@ -48,6 +47,7 @@ export function DocumentScanner() {
         const dataUrl = loadEvent.target?.result as string;
         setImage(dataUrl);
         form.setValue('image', dataUrl);
+        form.trigger('image'); // Manually trigger validation
       };
       reader.readAsDataURL(file);
     } else {
@@ -57,7 +57,7 @@ export function DocumentScanner() {
             description: "Please upload an image file (e.g., PNG, JPG, WEBP).",
         });
     }
-  };
+  }, [form, toast]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
       onDrop,
@@ -68,9 +68,10 @@ export function DocumentScanner() {
   const handleCapture = (dataUrl: string) => {
     setImage(dataUrl);
     form.setValue('image', dataUrl);
+    form.trigger('image');
   };
   
-  const handleRetake = () => {
+  const handleRemoveImage = () => {
     setImage(null);
     form.setValue('image', '');
     setResult(null);
@@ -98,69 +99,79 @@ export function DocumentScanner() {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        <div>
-            <Card>
-                <CardHeader>
-                    <CardTitle>1. Provide a Document</CardTitle>
-                    <CardDescription>
-                        Use your camera to capture a document or upload an image file from your device.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Tabs defaultValue="camera">
-                        <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="camera">Camera</TabsTrigger>
-                            <TabsTrigger value="upload">Upload</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="camera" className="mt-4">
-                            <CameraCapture 
-                                onCapture={handleCapture}
-                                capturedImage={image}
-                                onRetake={handleRetake}
-                            />
-                        </TabsContent>
-                        <TabsContent value="upload" className="mt-4">
-                            {image ? (
-                                <div className="space-y-4">
-                                    <img src={image} alt="Uploaded document" className="w-full rounded-md border" />
-                                     <Button onClick={handleRetake} variant="outline" className="w-full">
-                                        <FileImage className="mr-2 h-4 w-4" />
-                                        Upload a different file
-                                    </Button>
-                                </div>
-                            ) : (
-                                <div
-                                    {...getRootProps()}
-                                    className={`flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-accent transition-colors ${isDragActive ? 'border-primary' : 'border-border'}`}
-                                >
-                                    <input {...getInputProps()} />
-                                    <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center">
-                                        <Upload className="w-10 h-10 mb-3 text-muted-foreground" />
-                                        <p className="mb-2 text-sm text-muted-foreground">
-                                        {isDragActive ? "Drop the file here..." : <><span className="font-semibold">Click to upload</span> or drag and drop</>}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">PNG, JPG, or WEBP</p>
-                                    </div>
-                                </div>
-                            )}
-                        </TabsContent>
-                    </Tabs>
-                </CardContent>
-            </Card>
-        </div>
-
-      <div>
+    <div className="max-w-2xl mx-auto w-full space-y-8">
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                 <Card>
+                {/* Step 1: Provide Document */}
+                <Card>
                     <CardHeader>
-                        <CardTitle>2. Ask a Question</CardTitle>
+                        <CardTitle className="flex items-center justify-between">
+                            <span>1. Provide a Document</span>
+                            {image && (
+                                <Button variant="ghost" size="icon" onClick={handleRemoveImage}>
+                                    <X className="h-4 w-4" />
+                                    <span className="sr-only">Remove Image</span>
+                                </Button>
+                            )}
+                        </CardTitle>
                         <CardDescription>
-                            Tell the AI what you want to do with the document you provided.
+                            Use your camera to capture a document or upload an image file from your device.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
+                        {image ? (
+                             <img src={image} alt="Document preview" className="w-full rounded-md border" />
+                        ): (
+                            <Tabs defaultValue="camera">
+                                <TabsList className="grid w-full grid-cols-2">
+                                    <TabsTrigger value="camera">Camera</TabsTrigger>
+                                    <TabsTrigger value="upload">Upload</TabsTrigger>
+                                </TabsList>
+                                <TabsContent value="camera" className="mt-4">
+                                    <CameraCapture 
+                                        onCapture={handleCapture}
+                                        capturedImage={image}
+                                        onRetake={handleRemoveImage}
+                                    />
+                                </TabsContent>
+                                <TabsContent value="upload" className="mt-4">
+                                    <div
+                                        {...getRootProps()}
+                                        className={`flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-accent transition-colors ${isDragActive ? 'border-primary' : 'border-border'}`}
+                                    >
+                                        <input {...getInputProps()} />
+                                        <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center">
+                                            <Upload className="w-10 h-10 mb-3 text-muted-foreground" />
+                                            <p className="mb-2 text-sm text-muted-foreground">
+                                            {isDragActive ? "Drop the file here..." : <><span className="font-semibold">Click to upload</span> or drag and drop</>}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">PNG, JPG, or WEBP</p>
+                                        </div>
+                                    </div>
+                                </TabsContent>
+                            </Tabs>
+                        )}
+                         <FormField
+                            control={form.control}
+                            name="image"
+                            render={() => (
+                                <FormItem>
+                                    <FormMessage className="mt-2" />
+                                </FormItem>
+                            )}
+                        />
+                    </CardContent>
+                </Card>
+
+                 {/* Step 2: Ask a Question */}
+                <Card className={!image ? 'opacity-50 pointer-events-none' : ''}>
+                    <CardHeader>
+                        <CardTitle>2. Ask a Question</CardTitle>
+                        <CardDescription>
+                            Tell the AI what to do with the document.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
                          <FormField
                             control={form.control}
                             name="prompt"
@@ -169,39 +180,26 @@ export function DocumentScanner() {
                                 <FormLabel>Your Prompt</FormLabel>
                                 <FormControl>
                                     <Textarea
-                                        placeholder="e.g., 'Summarize the key points of this document.' or 'What are the main financial figures in this report?' or 'Translate this text to French.'"
+                                        placeholder="e.g., 'Summarize this document.' or 'What are the main financial figures?' or 'Translate this to French.'"
                                         className="min-h-[120px]"
                                         {...field}
+                                        disabled={!image}
                                     />
                                 </FormControl>
                                 <FormMessage />
                                 </FormItem>
                             )}
                         />
-                         <FormField
-                            control={form.control}
-                            name="image"
-                            render={({ field }) => (
-                                <FormItem className="hidden">
-                                <FormLabel>Image</FormLabel>
-                                <FormControl>
-                                    <Input type="text" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </CardContent>
-                    <CardContent>
-                         <Button type="submit" className="w-full" disabled={isLoading}>
+                        <Button type="submit" className="w-full" disabled={isLoading || !image}>
                             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
                             Process Document
                         </Button>
                     </CardContent>
                 </Card>
 
+                {/* Step 3: Result */}
                 {isLoading && (
-                    <Card className="mt-8">
+                    <Card>
                         <CardHeader>
                             <CardTitle>Result</CardTitle>
                         </CardHeader>
@@ -213,7 +211,7 @@ export function DocumentScanner() {
                 )}
                 
                 {result && !isLoading && (
-                    <Card className="mt-8">
+                    <Card>
                          <CardHeader>
                             <CardTitle>Result</CardTitle>
                         </CardHeader>
@@ -222,10 +220,8 @@ export function DocumentScanner() {
                         </CardContent>
                     </Card>
                 )}
-
             </form>
         </Form>
-      </div>
     </div>
   );
 }

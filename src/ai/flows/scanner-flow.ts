@@ -27,7 +27,8 @@ const scannerPrompt = ai.definePrompt({
     output: { format: 'text' },
     model: gemini15Flash,
     prompt: `You are an expert document analysis assistant.
-    Analyze the attached image of a document and follow the user's instructions.
+    You must start every response with a relevant emoji.
+    Analyze the attached image of a document and follow the user's instructions precisely.
     User instruction: {{{prompt}}}
     Document Photo: {{media url=photoDataUri}}`,
 });
