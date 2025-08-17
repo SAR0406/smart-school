@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/sidebar";
 import { ClassSelector } from "@/components/class-selector";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { cn } from "@/lib/utils";
 
 const menuItems = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -27,8 +28,6 @@ export function AppSidebar() {
   const pathname = usePathname();
 
   const isLinkActive = (href: string) => {
-    // Use exact match for all links to avoid hydration errors
-    // where multiple links could be considered active (e.g., /ai and /ai/scanner)
     return pathname === href;
   };
 
@@ -56,6 +55,9 @@ export function AppSidebar() {
                             <SidebarMenuButton 
                               isActive={isLinkActive(item.href)}
                               tooltip={item.label}
+                              className={cn(
+                                "data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/80 data-[active=true]:to-primary"
+                              )}
                             >
                                 <item.icon />
                                 <span>{item.label}</span>
