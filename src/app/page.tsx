@@ -4,6 +4,7 @@ import { TodayScheduleCard } from "@/components/today-schedule-card";
 import { SubjectSearch } from "@/components/subject-search";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { ClassSelector } from "@/components/class-selector";
 
 export default function Home() {
   return (
@@ -13,8 +14,13 @@ export default function Home() {
           <SidebarTrigger className="md:hidden" />
           <h1 className="text-lg font-semibold md:text-xl font-headline">Dashboard</h1>
         </div>
-        <div className="md:hidden">
-          <ThemeToggle />
+        <div className="flex items-center gap-4">
+            <div className="hidden md:block w-48">
+              <ClassSelector />
+            </div>
+            <div className="md:hidden">
+              <ThemeToggle />
+            </div>
         </div>
       </header>
 

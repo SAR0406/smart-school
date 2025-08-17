@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -12,32 +13,9 @@ export function CurrentPeriodCard() {
   const [period, setPeriod] = useState<Period | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetchPeriod() {
-      try {
-        const data = await getCurrentPeriod();
-        setPeriod(data);
-      } catch (error) {
-        console.error("Failed to fetch current period:", error);
-        setPeriod({
-            subject: "Error",
-            teacher: "-",
-            time: "-",
-            room: "-",
-            status: "finished",
-            message: "Could not load schedule"
-        })
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
+  const fetchPeriod = async () => {
     const classId = localStorage.getItem("selectedClass");
-    if(classId){
-        fetchPeriod();
-        const interval = setInterval(fetchPeriod, 60000);
-        return () => clearInterval(interval);
-    } else {
+     if(!classId){
         setIsLoading(false);
         setPeriod({
             subject: "No Class Selected",
@@ -47,8 +25,38 @@ export function CurrentPeriodCard() {
             status: "finished",
             message: "Please select a class first."
         });
+        return;
     }
+    
+    setIsLoading(true);
+    try {
+      const data = await getCurrentPeriod();
+      setPeriod(data);
+    } catch (error) {
+      console.error("Failed to fetch current period:", error);
+      setPeriod({
+          subject: "Error",
+          teacher: "-",
+          time: "-",
+          room: "-",
+          status: "finished",
+          message: "Could not load schedule"
+      })
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
+  useEffect(() => {
+    fetchPeriod();
+    const interval = setInterval(fetchPeriod, 60000); // Refreshes every minute
+
+    window.addEventListener('storage', fetchPeriod);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('storage', fetchPeriod);
+    }
   }, []);
 
   const getStatusInfo = (status?: 'ongoing' | 'break' | 'finished') => {

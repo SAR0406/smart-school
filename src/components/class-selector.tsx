@@ -21,7 +21,10 @@ export function ClassSelector() {
   const [selectedClass, setSelectedClass] = useState<string | undefined>();
   const [isLoading, setIsLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
-  const { state: sidebarState } = useSidebar();
+  // useSidebar can be called conditionally
+  const sidebar = useSidebar();
+  const sidebarState = sidebar?.state ?? 'expanded';
+
 
   useEffect(() => {
     setIsMounted(true);
@@ -51,36 +54,44 @@ export function ClassSelector() {
   const handleValueChange = (value: string) => {
     setSelectedClass(value);
     localStorage.setItem("selectedClass", value);
-    window.location.reload();
+    window.dispatchEvent(new Event('storage')); // Notify other components of the change
   };
 
   if (!isMounted || isLoading) {
     return (
-        <div className="space-y-2 p-2">
-            <Skeleton className="h-4 w-1/3" />
+        <div className="space-y-2 p-2 md:p-0">
+            <Skeleton className={cn("h-4 w-1/3", sidebarState === 'collapsed' ? 'hidden' : 'block')} />
             <Skeleton className="h-10 w-full" />
         </div>
     );
   }
 
+  // This check is to determine if the component is being rendered inside the sidebar context
+  const isinSidebar = !!sidebar;
+
   return (
-    <div className="space-y-2 p-2">
-      <label
-        htmlFor="class-selector"
-        className={cn("text-sm font-medium text-sidebar-foreground/70", sidebarState === 'collapsed' && 'hidden')}
-      >
-        My Class
-      </label>
+    <div className={cn("space-y-2", isinSidebar && 'p-2')}>
+       {isinSidebar && (
+         <label
+          htmlFor="class-selector"
+          className={cn("text-sm font-medium text-sidebar-foreground/70", sidebarState === 'collapsed' && 'hidden')}
+        >
+          My Class
+        </label>
+       )}
       <Select value={selectedClass} onValueChange={handleValueChange} disabled={classes.length === 0}>
         <SelectTrigger
           id="class-selector"
-          className={cn("w-full bg-sidebar-accent border-sidebar-border focus:ring-sidebar-ring", sidebarState === 'collapsed' && 'w-10 h-10 p-2 justify-center')}
+          className={cn(
+              isinSidebar ? "bg-sidebar-accent border-sidebar-border focus:ring-sidebar-ring" : "",
+              isinSidebar && sidebarState === 'collapsed' && 'w-10 h-10 p-2 justify-center'
+            )}
         >
-            <div className={cn("flex items-center gap-2", sidebarState === 'collapsed' && 'hidden')}>
+            <div className={cn("flex items-center gap-2", isinSidebar && sidebarState === 'collapsed' && 'hidden')}>
               <School className="h-4 w-4" />
               <SelectValue placeholder="Select..." />
             </div>
-            {sidebarState === 'collapsed' && <School className="h-5 w-5" />}
+             {isinSidebar && sidebarState === 'collapsed' && <School className="h-5 w-5" />}
 
         </SelectTrigger>
         <SelectContent>

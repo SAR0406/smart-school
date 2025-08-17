@@ -54,6 +54,14 @@ export function TodayScheduleCard() {
     if (!isMounted) return;
     
     async function fetchSchedule() {
+        const classId = localStorage.getItem("selectedClass");
+        if (!classId) {
+            setError("Please select a class to view the schedule.");
+            setIsLoading(false);
+            setSchedule([]);
+            return;
+        }
+
         setIsLoading(true);
         setError(null);
       try {
@@ -144,5 +152,3 @@ export function TodayScheduleCard() {
     </Dialog>
   );
 }
-
-    
