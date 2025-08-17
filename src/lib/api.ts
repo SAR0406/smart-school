@@ -1,3 +1,4 @@
+
 import type { Class, Period, WeekSchedule, SearchResult } from './types';
 import { scheduleData, classNames } from './data';
 import { format, getDay, parse, set, isBefore, isAfter, isEqual } from 'date-fns';
@@ -57,7 +58,9 @@ export const getCurrentPeriod = async (): Promise<Period> => {
     }
     
     // Check for time before first period or between periods
-    const firstPeriodStart = set(now, { hours: ...todaySchedule[0].start_time.split(':').map(Number) as [number, number], seconds: 0, milliseconds: 0 });
+    const [firstPeriodStartHour, firstPeriodStartMinute] = todaySchedule[0].start_time.split(':').map(Number);
+    const firstPeriodStart = set(now, { hours: firstPeriodStartHour, minutes: firstPeriodStartMinute, seconds: 0, milliseconds: 0 });
+
     if (isBefore(now, firstPeriodStart)) {
         return {
             subject: 'Before School',
@@ -67,8 +70,11 @@ export const getCurrentPeriod = async (): Promise<Period> => {
     }
 
     for (let i = 0; i < todaySchedule.length - 1; i++) {
-        const currentPeriodEnd = set(now, { hours: ...todaySchedule[i].end_time.split(':').map(Number) as [number, number], seconds: 0, milliseconds: 0 });
-        const nextPeriodStart = set(now, { hours: ...todaySchedule[i + 1].start_time.split(':').map(Number) as [number, number], seconds: 0, milliseconds: 0 });
+        const [currentPeriodEndHour, currentPeriodEndMinute] = todaySchedule[i].end_time.split(':').map(Number);
+        const currentPeriodEnd = set(now, { hours: currentPeriodEndHour, minutes: currentPeriodEndMinute, seconds: 0, milliseconds: 0 });
+        
+        const [nextPeriodStartHour, nextPeriodStartMinute] = todaySchedule[i + 1].start_time.split(':').map(Number);
+        const nextPeriodStart = set(now, { hours: nextPeriodStartHour, minutes: nextPeriodStartMinute, seconds: 0, milliseconds: 0 });
 
         if (isAfter(now, currentPeriodEnd) && isBefore(now, nextPeriodStart)) {
              return {
@@ -166,5 +172,3 @@ export const getNvidiaAIResponse = async (tool: string, prompt: string, streamCa
     streamCallback(chunks[i] + ' ');
   }
 }
-
-    
