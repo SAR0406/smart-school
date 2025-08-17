@@ -17,9 +17,6 @@ export default function Home() {
                 <span className="text-xl font-bold font-headline">SchoolZen</span>
             </Link>
             <nav className="flex items-center gap-4">
-                <Button variant="ghost" asChild>
-                    <Link href="#">Log In</Link>
-                </Button>
                 <Button className="shadow-[0_0_20px] shadow-primary/50" asChild>
                     <Link href="#">Get Started</Link>
                 </Button>
