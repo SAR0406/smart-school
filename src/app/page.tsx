@@ -18,7 +18,7 @@ export default function Home() {
             </Link>
             <nav className="flex items-center gap-4">
                 <Button className="shadow-[0_0_20px] shadow-primary/50" asChild>
-                    <Link href="#">Get Started</Link>
+                    <Link href="/dashboard">Get Started</Link>
                 </Button>
             </nav>
         </header>
@@ -36,7 +36,7 @@ export default function Home() {
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-4">
                  <Button size="lg" className="shadow-[0_0_20px] shadow-primary/50" asChild>
-                    <Link href="#">
+                    <Link href="/dashboard">
                         Start Learning Now
                         <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
