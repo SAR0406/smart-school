@@ -134,7 +134,7 @@ export default function AIPage() {
   return (
     <main className="relative flex min-h-svh flex-1 bg-background">
       <div className="hidden md:flex md:w-1/3 lg:w-1/4 flex-col border-r">
-         <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
+         <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
              <h1 className="text-lg font-semibold md:text-xl flex items-center gap-2 font-headline">
                 <Bot /> AI Tools
             </h1>
@@ -167,16 +167,16 @@ export default function AIPage() {
         </ScrollArea>
       </div>
       <div className="flex-1 flex flex-col">
-         <header className="md:hidden sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
+         <header className="md:hidden sticky top-0 z-10 flex h-14 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
             <div className="flex items-center gap-2">
                 <SidebarTrigger />
                 <h1 className="text-lg font-semibold md:text-xl flex items-center gap-2">
-                    <activePersona.icon /> {activePersona.title}
+                    <activePersona.icon className="w-5 h-5" /> {activePersona.title}
                 </h1>
             </div>
              <ThemeToggle />
         </header>
-        <div className="flex-1 h-[calc(100vh-56px)] md:h-screen">
+        <div className="flex-1 h-[calc(100svh-56px)] md:h-svh">
             <ChatInterface persona={activePersona} key={activePersona.tool} />
         </div>
       </div>

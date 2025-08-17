@@ -10,6 +10,7 @@ import {
   Trash2,
   BrainCircuit,
   type LucideIcon,
+  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,7 +18,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent, CardFooter, CardHeader } from "./ui/card";
 import {
   Tooltip,
   TooltipContent,
@@ -265,59 +265,64 @@ export function ChatInterface({ persona, initialModel = 'nvidia' }: ChatInterfac
         <main className="flex-grow overflow-hidden">
           <ScrollArea className="h-full pr-4" ref={scrollAreaRef}>
             <div className="space-y-4 p-4 md:p-6">
-               {messages.length === 0 && (
-                    <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
-                        <persona.icon className={cn("h-12 w-12 mb-4", persona.color)} />
+               {messages.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground py-12">
+                        <div className={cn("p-4 rounded-full mb-4", persona.bgColor)}>
+                           <persona.icon className={cn("h-12 w-12", persona.color)} />
+                        </div>
                         <p className="text-lg font-semibold">{persona.welcome.title}</p>
-                        <p>{persona.welcome.message}</p>
+                        <p className="text-sm">{persona.welcome.message}</p>
                     </div>
+                ) : (
+                  messages.map((message) => (
+                    <div key={message.id} className={cn("flex items-start gap-3 w-full")}>
+                      {message.role === "assistant" && (
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className={cn("text-white", persona.bgColor)}>
+                            <persona.icon className={cn("h-5 w-5", persona.color)} />
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
+                      <div className={cn("max-w-[80%] rounded-lg p-3 text-sm", message.role === "user" ? "bg-primary text-primary-foreground ml-auto" : "bg-muted")}>
+                        {isLoading && message.content === "" ? <Loader2 className="h-5 w-5 animate-spin" /> : renderMessageContent(message)}
+                      </div>
+                      {message.role === "user" && (
+                        <Avatar className="h-8 w-8"><AvatarFallback><User className="w-5 h-5"/></AvatarFallback></Avatar>
+                      )}
+                    </div>
+                  ))
                 )}
-              {messages.map((message) => (
-                <div key={message.id} className={cn("flex items-start gap-3", message.role === "user" ? "justify-end" : "justify-start")}>
-                  {message.role === "assistant" && (
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className={cn("text-white", persona.bgColor)}>
-                        <persona.icon className={cn("h-5 w-5", persona.color)} />
-                      </AvatarFallback>
-                    </Avatar>
-                  )}
-                  <div className={cn("max-w-[80%] rounded-lg p-3 text-sm", message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted")}>
-                    {isLoading && message.content === "" ? <Loader2 className="h-5 w-5 animate-spin" /> : renderMessageContent(message)}
-                  </div>
-                  {message.role === "user" && (
-                    <Avatar className="h-8 w-8"><AvatarFallback>U</AvatarFallback></Avatar>
-                  )}
-                </div>
-              ))}
             </div>
           </ScrollArea>
         </main>
         <footer className="border-t p-4">
-          <form onSubmit={handleSubmit} className="flex w-full items-center gap-2">
+          <form onSubmit={handleSubmit} className="flex w-full items-center gap-2 relative">
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder={isListening ? "Listening..." : persona.promptPlaceholder || 'Message your AI assistant...'}
-              className="flex-grow resize-none"
+              className="flex-grow resize-none pr-20"
               rows={1}
-              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { handleSubmit(e); } }}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(e); } }}
               disabled={isLoading}
             />
-            {recognitionRef.current && (
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button type="button" size="icon" variant="ghost" onClick={handleVoiceInput} disabled={isLoading}>
-                            <Mic className={cn("h-5 w-5", isListening && 'text-primary animate-pulse')} />
-                            <span className="sr-only">Use Microphone</span>
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent><p>{isListening ? 'Stop Listening' : 'Start Listening'}</p></TooltipContent>
-                </Tooltip>
-            )}
-            <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
-              {isLoading ? <Loader2 className="animate-spin" /> : <Send />}
-              <span className="sr-only">Send message</span>
-            </Button>
+            <div className="absolute top-1/2 right-2 -translate-y-1/2 flex items-center gap-1">
+                {recognitionRef.current && (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button type="button" size="icon" variant="ghost" onClick={handleVoiceInput} disabled={isLoading}>
+                                <Mic className={cn("h-5 w-5", isListening && 'text-primary animate-pulse')} />
+                                <span className="sr-only">Use Microphone</span>
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent><p>{isListening ? 'Stop Listening' : 'Start Listening'}</p></TooltipContent>
+                    </Tooltip>
+                )}
+                <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
+                  {isLoading ? <Loader2 className="animate-spin" /> : <Send />}
+                  <span className="sr-only">Send message</span>
+                </Button>
+            </div>
           </form>
         </footer>
       </div>

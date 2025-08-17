@@ -37,12 +37,12 @@ export default function GeminiPage() {
         </div>
       </header>
       <div className="flex flex-1 flex-col p-4 sm:p-6 lg:p-8">
-        <Tabs defaultValue="chat" className="flex-grow">
+        <Tabs defaultValue="chat" className="flex flex-grow flex-col">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="chat">AI Chat</TabsTrigger>
             <TabsTrigger value="quiz">Advanced Quiz Generator</TabsTrigger>
           </TabsList>
-          <TabsContent value="chat" className="mt-4 h-[calc(100vh-180px)]">
+          <TabsContent value="chat" className="mt-4 flex-grow">
              <ChatInterface persona={geminiChatPersona} />
           </TabsContent>
           <TabsContent value="quiz" className="mt-4">
