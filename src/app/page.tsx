@@ -10,7 +10,7 @@ import { Heart } from "lucide-react";
 export default function Home() {
   return (
     <div className="relative flex min-h-svh flex-1 flex-col">
-      <main className="flex-1 bg-background">
+      <main className="flex-1 bg-background/50">
         <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
           <div className="flex items-center gap-2">
             <SidebarTrigger className="md:hidden" />
@@ -40,7 +40,7 @@ export default function Home() {
           </div>
         </div>
       </main>
-      <footer className="py-4 px-4 sm:px-6 lg:px-8 text-center text-xs text-muted-foreground bg-background border-t">
+      <footer className="py-4 px-4 sm:px-6 lg:px-8 text-center text-xs text-muted-foreground bg-background/50 border-t">
         Made with <Heart className="inline h-4 w-4 text-red-500" /> by Sarthak Upadhyay
       </footer>
     </div>
