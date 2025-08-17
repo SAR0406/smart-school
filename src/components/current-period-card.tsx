@@ -77,7 +77,7 @@ export function CurrentPeriodCard() {
   const { emoji, color, ringColor } = getStatusInfo(period?.status);
 
   return (
-    <Card>
+    <Card className="transition-all hover:shadow-lg hover:shadow-primary/20">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>Current Status</span>

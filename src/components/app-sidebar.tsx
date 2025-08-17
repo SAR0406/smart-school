@@ -1,4 +1,3 @@
-
 "use client";
 
 import { usePathname } from "next/navigation";
@@ -38,7 +37,7 @@ export function AppSidebar() {
       <SidebarHeader className="flex items-center justify-between p-2 md:p-0">
         <div className="flex h-12 items-center gap-2 px-2 group-data-[collapsible=icon]:h-12 group-data-[collapsible=icon]:justify-center">
           <GraduationCap className="size-6 text-primary" />
-          <h1 className="text-xl font-bold text-primary group-data-[collapsible=icon]:hidden">
+          <h1 className="text-xl font-bold text-primary group-data-[collapsible=icon]:hidden font-headline">
             SchoolZen
           </h1>
         </div>

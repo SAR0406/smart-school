@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -34,7 +33,7 @@ export function WelcomeCard() {
   }
 
   return (
-    <Card className="relative overflow-hidden bg-gradient-to-br from-primary/80 to-primary text-primary-foreground transition-all hover:shadow-xl hover:shadow-primary/30">
+    <Card className="relative overflow-hidden bg-gradient-to-br from-primary/90 to-primary text-primary-foreground transition-all hover:shadow-xl hover:shadow-primary/30">
         <div className="absolute -right-12 -bottom-12 opacity-20">
             <Image 
                 src="https://placehold.co/400x400.png"
