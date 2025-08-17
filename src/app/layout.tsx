@@ -2,8 +2,6 @@ import type {Metadata} from 'next';
 import { Toaster } from "@/components/ui/toaster"
 import './globals.css';
 import { cn } from '@/lib/utils';
-import { SidebarProvider } from '@/components/ui/sidebar';
-import { AppSidebar } from '@/components/app-sidebar';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Inter, Space_Grotesk } from 'next/font/google';
 
@@ -30,7 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={cn(
-        "font-body antialiased moving-background",
+        "font-body antialiased",
         inter.variable,
         spaceGrotesk.variable
         )}>
@@ -40,11 +38,8 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
         >
-            <SidebarProvider>
-              <AppSidebar />
-              {children}
-              <Toaster />
-            </SidebarProvider>
+            {children}
+            <Toaster />
         </ThemeProvider>
       </body>
     </html>

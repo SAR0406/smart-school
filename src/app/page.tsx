@@ -1,48 +1,52 @@
-import { WelcomeCard } from "@/components/welcome-card";
-import { CurrentPeriodCard } from "@/components/current-period-card";
-import { TodayScheduleCard } from "@/components/today-schedule-card";
-import { SubjectSearch } from "@/components/subject-search";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { ClassSelector } from "@/components/class-selector";
-import { Heart } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { HeroIllustration } from "@/components/hero-illustration";
+import { GraduationCap, Sparkles, ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="relative flex min-h-svh flex-1 flex-col">
-      <main className="flex-1 bg-background/50">
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
-          <div className="flex items-center gap-2">
-            <SidebarTrigger className="md:hidden" />
-            <h1 className="text-lg font-semibold md:text-xl font-headline">Dashboard</h1>
-          </div>
-          <div className="flex items-center gap-4">
-              <div className="hidden md:block w-48">
-                <ClassSelector />
-              </div>
-              <div className="md:hidden">
-                <ThemeToggle />
-              </div>
-          </div>
+    <div className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden bg-background">
+      <div className="absolute inset-0 z-0">
+         <HeroIllustration />
+      </div>
+
+      <div className="relative z-10 flex flex-col items-center justify-center w-full h-full">
+        <header className="absolute top-0 left-0 right-0 p-4 sm:p-6 lg:p-8 flex justify-between items-center">
+            <Link href="/" className="flex items-center gap-2">
+                <GraduationCap className="h-6 w-6 text-primary" />
+                <span className="text-xl font-bold font-headline">SchoolZen</span>
+            </Link>
+            <nav className="flex items-center gap-4">
+                <Button variant="ghost" asChild>
+                    <Link href="#">Log In</Link>
+                </Button>
+                <Button className="shadow-[0_0_20px] shadow-primary/50" asChild>
+                    <Link href="#">Get Started</Link>
+                </Button>
+            </nav>
         </header>
 
-        <div className="flex-1 space-y-4 p-4 sm:p-6 lg:p-8">
-          <WelcomeCard />
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-8">
-            <div className="lg:col-span-2">
-              <TodayScheduleCard />
+        <main className="flex-1 flex flex-col items-center justify-center text-center px-4">
+            <div className="inline-flex items-center rounded-full bg-secondary text-sm font-medium px-4 py-2 mb-6">
+                <Sparkles className="h-4 w-4 mr-2 text-primary" />
+                Powered by the latest in Generative AI
             </div>
-            <div className="space-y-4 lg:space-y-8">
-              <CurrentPeriodCard />
-              <SubjectSearch />
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold font-headline max-w-4xl tracking-tighter">
+                The Future of Learning, <span className="text-glow bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">Personalized.</span>
+            </h1>
+            <p className="mt-6 max-w-2xl text-lg text-muted-foreground">
+                SchoolZen is an intelligent learning platform that adapts to you. Get personalized study plans, instant help, and engaging content to achieve your academic goals faster.
+            </p>
+            <div className="mt-8 flex flex-wrap justify-center gap-4">
+                 <Button size="lg" className="shadow-[0_0_20px] shadow-primary/50" asChild>
+                    <Link href="#">
+                        Start Learning Now
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                </Button>
             </div>
-          </div>
-        </div>
-      </main>
-      <footer className="py-4 px-4 sm:px-6 lg:px-8 text-center text-xs text-muted-foreground bg-background/50 border-t">
-        Made with <Heart className="inline h-4 w-4 text-red-500" /> by Sarthak Upadhyay
-      </footer>
+        </main>
+      </div>
     </div>
   );
 }
