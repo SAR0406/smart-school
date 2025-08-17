@@ -32,7 +32,7 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar side="left" variant="sidebar" collapsible="icon" className="group">
+    <Sidebar side="left" variant="sidebar" collapsible="icon" className="group glassmorphism border-r-0">
       <SidebarHeader className="flex items-center justify-between p-2 md:p-0">
         <div className="flex h-12 items-center gap-2 px-2 group-data-[collapsible=icon]:h-12 group-data-[collapsible=icon]:justify-center">
           <GraduationCap className="size-6 text-primary" />
@@ -41,9 +41,8 @@ export function AppSidebar() {
           </h1>
         </div>
         <div className="md:hidden">
-            <ThemeToggle />
+            <SidebarTrigger />
         </div>
-        <SidebarTrigger className="hidden md:flex" />
       </SidebarHeader>
       <SidebarContent className="p-2 flex flex-col justify-between">
         <div>
