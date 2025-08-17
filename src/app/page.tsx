@@ -4,7 +4,6 @@ import { CurrentPeriodCard } from "@/components/current-period-card";
 import { TodayScheduleCard } from "@/components/today-schedule-card";
 import { SubjectSearch } from "@/components/subject-search";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function Home() {
   return (
@@ -13,9 +12,6 @@ export default function Home() {
         <div className="flex items-center gap-2">
           <SidebarTrigger className="md:hidden" />
           <h1 className="text-lg font-semibold md:text-xl">Dashboard</h1>
-        </div>
-        <div className="md:hidden">
-          <ThemeToggle />
         </div>
       </header>
 

@@ -1,7 +1,6 @@
 
 import { DocumentScanner } from "@/components/document-scanner";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { ScanLine } from "lucide-react";
 
 export default function ScannerPage() {
@@ -13,9 +12,6 @@ export default function ScannerPage() {
                     <h1 className="text-lg font-semibold md:text-xl flex items-center gap-2">
                         <ScanLine /> Document Scanner
                     </h1>
-                </div>
-                 <div className="md:hidden">
-                    <ThemeToggle />
                 </div>
             </header>
             <div className="flex-1 p-4 sm:p-6 lg:p-8">

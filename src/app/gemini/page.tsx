@@ -9,7 +9,6 @@ import { AdvancedQuizGenerator } from '@/components/advanced-quiz-generator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ThemeToggle } from '@/components/theme-toggle';
 
 const geminiChatPersona: AIPersona = {
   tool: 'gemini-chat',
@@ -35,9 +34,6 @@ export default function GeminiPage() {
             <Bot />
             Gemini AI
           </h1>
-        </div>
-        <div className="md:hidden">
-            <ThemeToggle />
         </div>
       </header>
       <div className="flex flex-1 flex-col p-4 sm:p-6 lg:p-8">

@@ -174,7 +174,6 @@ export default function AIPage() {
                     <activePersona.icon /> {activePersona.title}
                 </h1>
             </div>
-            <ThemeToggle />
         </header>
         <div className="flex-1 h-[calc(100vh-56px)] md:h-screen">
             <ChatInterface persona={activePersona} key={activePersona.tool} />
