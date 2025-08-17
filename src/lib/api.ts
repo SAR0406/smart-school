@@ -1,3 +1,4 @@
+
 import type { Class, Period, WeekSchedule, SearchResult } from './types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://smart-school-ai-backend.onrender.com';
