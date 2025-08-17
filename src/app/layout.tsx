@@ -5,6 +5,7 @@ import './globals.css';
 import { cn } from '@/lib/utils';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
+import { ThemeProvider } from '@/components/theme-provider';
 
 export const metadata: Metadata = {
   title: 'SchoolZen',
@@ -28,11 +29,18 @@ export default function RootLayout({
         "font-body antialiased",
         "min-h-screen bg-background font-sans"
         )}>
-        <SidebarProvider>
-          <AppSidebar />
-          {children}
-          <Toaster />
-        </SidebarProvider>
+        <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem
+            disableTransitionOnChange
+        >
+            <SidebarProvider>
+              <AppSidebar />
+              {children}
+              <Toaster />
+            </SidebarProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

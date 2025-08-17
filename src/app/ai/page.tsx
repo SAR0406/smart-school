@@ -19,6 +19,7 @@ import { ChatInterface, type AIPersona } from '@/components/chat-interface';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 const personas: AIPersona[] = [
   {
@@ -173,6 +174,7 @@ export default function AIPage() {
                     <activePersona.icon /> {activePersona.title}
                 </h1>
             </div>
+            <ThemeToggle />
         </header>
         <div className="flex-1 h-[calc(100vh-56px)] md:h-screen">
             <ChatInterface persona={activePersona} key={activePersona.tool} />

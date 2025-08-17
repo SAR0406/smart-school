@@ -11,8 +11,10 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarFooter,
 } from "@/components/ui/sidebar";
 import { ClassSelector } from "@/components/class-selector";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const menuItems = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -59,6 +61,9 @@ export function AppSidebar() {
                 ))}
             </SidebarMenu>
         </div>
+        <SidebarFooter>
+            <ThemeToggle />
+        </SidebarFooter>
       </SidebarContent>
     </Sidebar>
   );
