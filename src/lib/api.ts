@@ -3,16 +3,17 @@ import type { Class, Period, WeekSchedule, SearchResult } from './types';
 import { scheduleData, classNames } from './data';
 import { format, getDay, parse, set, isBefore, isAfter, isEqual } from 'date-fns';
 
-type ScheduleData = typeof scheduleData;
+type ScheduleData = typeof scheduleData.classes;
 
 const getClassId = (): keyof ScheduleData | null => {
     if (typeof window === 'undefined') return null;
     const savedClass = localStorage.getItem("selectedClass");
-    return savedClass && savedClass in scheduleData ? savedClass as keyof ScheduleData : null;
+    return savedClass && savedClass in scheduleData.classes ? savedClass as keyof ScheduleData : null;
 }
 
 const getTodayDayName = () => {
-  return format(new Date(), 'EEEE'); // e.g., "Monday"
+  // Returns Sunday, Monday, etc.
+  return format(new Date(), 'EEEE');
 }
 
 // --- API Functions ---
@@ -27,13 +28,14 @@ export const getCurrentPeriod = async (): Promise<Period> => {
 
     const now = new Date();
     const todayName = getTodayDayName();
-    const todaySchedule = scheduleData[classId].daily_schedule[todayName as keyof typeof scheduleData[keyof ScheduleData]['daily_schedule']];
+    const todaySchedule = scheduleData.classes[classId].daily_schedule[todayName as keyof typeof scheduleData.classes[keyof ScheduleData]['daily_schedule']];
 
     if (!todaySchedule || todaySchedule.length === 0) {
+        const isWeekend = todayName === 'Sunday' || (todayName === 'Saturday' && scheduleData.classes[classId].daily_schedule.Saturday.length === 0)
         return {
             subject: 'School Day Finished',
             teacher: 'N/A', time: '-', room: 'N/A',
-            status: 'finished', message: 'Enjoy your day off!'
+            status: 'finished', message: isWeekend ? 'Enjoy your weekend!' : 'Enjoy your day off!'
         };
     }
     
@@ -110,14 +112,14 @@ export const getDaySchedule = async (): Promise<Period[]> => {
   const classId = getClassId();
   if (!classId) throw new Error("No class selected");
   const todayName = getTodayDayName();
-  const schedule = scheduleData[classId].daily_schedule[todayName as keyof typeof scheduleData[keyof ScheduleData]['daily_schedule']];
+  const schedule = scheduleData.classes[classId].daily_schedule[todayName as keyof typeof scheduleData.classes[keyof ScheduleData]['daily_schedule']];
   return new Promise(resolve => resolve(mapPeriods(schedule || [])));
 };
 
 export const getDayScheduleByDay = async (day: string): Promise<Period[]> => {
   const classId = getClassId();
   if (!classId) throw new Error("No class selected");
-  const schedule = scheduleData[classId].daily_schedule[day as keyof typeof scheduleData[keyof ScheduleData]['daily_schedule']];
+  const schedule = scheduleData.classes[classId].daily_schedule[day as keyof typeof scheduleData.classes[keyof ScheduleData]['daily_schedule']];
   return new Promise(resolve => resolve(mapPeriods(schedule || [])));
 }
 
@@ -125,7 +127,7 @@ export const getFullWeekSchedule = async (): Promise<WeekSchedule> => {
     const classId = getClassId();
     if (!classId) throw new Error("No class selected");
 
-    const weekData = scheduleData[classId].daily_schedule;
+    const weekData = scheduleData.classes[classId].daily_schedule;
     const schedule: Partial<WeekSchedule> = {};
     const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -145,20 +147,23 @@ export const searchPeriodsBySubject = async (query: string): Promise<SearchResul
     const classId = getClassId();
     if (!classId || !query) return {};
 
-    const weekData = scheduleData[classId].daily_schedule;
+    const weekData = scheduleData.classes[classId].daily_schedule;
     const results: SearchResult = {};
     
     for (const day in weekData) {
+        if (!Object.prototype.hasOwnProperty.call(weekData, day)) continue;
         const dayKey = day as keyof typeof weekData;
         const periods = weekData[dayKey];
-        const matchingPeriods = periods.filter(p => p.subject.toLowerCase().includes(query.toLowerCase()));
-
-        if (matchingPeriods.length > 0) {
-            results[day.toLowerCase()] = mapPeriods(matchingPeriods);
+        if (periods) {
+            const matchingPeriods = periods.filter(p => p.subject.toLowerCase().includes(query.toLowerCase()));
+            if (matchingPeriods.length > 0) {
+                results[day.toLowerCase()] = mapPeriods(matchingPeriods);
+            }
         }
     }
     return results;
 }
+
 
 export const getNvidiaAIResponse = async (tool: string, prompt: string, streamCallback: (chunk: string) => void) => {
   const modifiedPrompt = `You must start every response with a relevant emoji. User query: ${prompt}`;
