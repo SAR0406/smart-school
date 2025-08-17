@@ -4,6 +4,7 @@ import { TodayScheduleCard } from "@/components/today-schedule-card";
 import { SubjectSearch } from "@/components/subject-search";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { GraduationCap } from "lucide-react";
+import { ClassSelector } from "@/components/class-selector";
 
 export default function DashboardPage() {
   return (
@@ -15,19 +16,22 @@ export default function DashboardPage() {
                     <GraduationCap className="h-5 w-5" /> Dashboard
                 </h1>
             </div>
+            <div className="hidden md:block">
+              <ClassSelector />
+            </div>
         </header>
         <div className="flex-1 p-4 sm:p-6 lg:p-8">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <div className="lg:col-span-3">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="lg:col-span-3 xl:col-span-4">
                     <WelcomeCard />
                 </div>
-                <div className="lg:col-span-1">
+                <div className="lg:col-span-1 xl:col-span-1">
                     <CurrentPeriodCard />
                 </div>
-                <div className="lg:col-span-2">
+                <div className="lg:col-span-2 xl:col-span-2">
                     <TodayScheduleCard />
                 </div>
-                 <div className="lg:col-span-3">
+                 <div className="lg:col-span-3 xl:col-span-1">
                     <SubjectSearch />
                 </div>
             </div>

@@ -51,7 +51,9 @@ function AppSidebar() {
       </SidebarHeader>
       <SidebarContent className="p-2 flex flex-col justify-between">
         <div>
-            <ClassSelector />
+            <div className="md:hidden">
+              <ClassSelector />
+            </div>
             <SidebarMenu className="mt-4">
                 {menuItems.map((item) => (
                     <SidebarMenuItem key={item.href}>
@@ -60,7 +62,7 @@ function AppSidebar() {
                               isActive={isLinkActive(item.href)}
                               tooltip={item.label}
                               className={cn(
-                                "data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/80 data-[active=true]:to-primary"
+                                "data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/20 data-[active=true]:to-primary/50 data-[active=true]:text-primary data-[active=true]:border-primary/30 data-[active=true]:border"
                               )}
                             >
                                 <item.icon />

@@ -23,7 +23,7 @@ export function WelcomeCard() {
 
   if (!isMounted) {
     return (
-        <Card className="bg-primary text-primary-foreground">
+        <Card className="bg-primary/10">
             <CardHeader>
                 <Skeleton className="h-8 w-1/2 bg-white/30" />
                 <Skeleton className="h-4 w-3/4 bg-white/30" />
@@ -33,8 +33,8 @@ export function WelcomeCard() {
   }
 
   return (
-    <Card className="relative overflow-hidden bg-gradient-to-br from-primary/90 to-primary text-primary-foreground transition-all hover:shadow-xl hover:shadow-primary/30">
-        <div className="absolute -right-12 -bottom-12 opacity-20">
+    <Card className="relative overflow-hidden bg-primary/10 border-primary/20 transition-all hover:shadow-xl hover:shadow-primary/20">
+        <div className="absolute -right-12 -bottom-12 opacity-10">
             <Image 
                 src="https://placehold.co/400x400.png"
                 alt="Abstract background"
@@ -46,7 +46,7 @@ export function WelcomeCard() {
         </div>
       <CardHeader className="relative z-10">
         <CardTitle className="text-3xl font-bold">{greeting}</CardTitle>
-        <CardDescription className="text-primary-foreground/80">Here's what's happening with your schedule today.</CardDescription>
+        <CardDescription className="text-foreground/80">Here's what's happening with your schedule today.</CardDescription>
       </CardHeader>
     </Card>
   );
