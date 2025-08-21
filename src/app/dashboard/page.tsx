@@ -36,6 +36,9 @@ export default function DashboardPage() {
                 </div>
             </div>
         </div>
+        <footer className="p-4 text-center text-muted-foreground text-sm">
+            Made with 💗 by <span className="text-shiny-gold font-semibold">Sarthak Upadhyay</span>
+        </footer>
     </main>
   );
 }
