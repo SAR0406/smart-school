@@ -46,7 +46,7 @@ export function WelcomeCard() {
             />
         </div>
       <CardHeader className="relative z-10">
-        <CardTitle className="text-3xl font-bold">{greeting}</CardTitle>
+        <CardTitle className="text-3xl font-bold text-shiny-gold">{greeting}</CardTitle>
         <CardDescription className="text-foreground/80">Here's what's happening with your schedule today.</CardDescription>
       </CardHeader>
     </Card>
