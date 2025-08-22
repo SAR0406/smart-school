@@ -57,36 +57,24 @@ export interface AIPersona {
 
 interface ChatInterfaceProps {
     persona: AIPersona;
-    initialModel?: AIModel;
 }
 
 const geminiFlows = {
     "gemini-chat": chatWithGemini,
 }
 
-export function ChatInterface({ persona, initialModel = 'nvidia' }: ChatInterfaceProps) {
+export function ChatInterface({ persona }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [currentModel, setCurrentModel] = useState<AIModel>(initialModel);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const { toast } = useToast();
 
-  const storageKey = `schoolzen-chat-${persona.tool}-${currentModel}`;
-  const isGeminiEnabled = persona.tool === 'chat' || persona.tool === 'quiz' || persona.tool === 'gemini-chat';
+  const storageKey = `schoolzen-chat-${persona.tool}`;
   
-  // When persona changes, reset the model if gemini isn't enabled for it.
-  useEffect(() => {
-    if (!isGeminiEnabled && currentModel === 'gemini') {
-        setCurrentModel('nvidia');
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [persona.tool]);
-
-
   useEffect(() => {
     setIsMounted(true);
     // Setup Speech Recognition
@@ -109,14 +97,15 @@ export function ChatInterface({ persona, initialModel = 'nvidia' }: ChatInterfac
     }
   }, [toast]);
 
-  // Load messages from localStorage when model changes
+  // Load messages from localStorage when persona changes
   useEffect(() => {
     if (!isMounted) return;
     try {
         const storedMessages = localStorage.getItem(storageKey);
         if (storedMessages) {
           const parsed = JSON.parse(storedMessages);
-          const validMessages = parsed.filter((m: Message) => typeof m.content === 'string' || (m.content && typeof (m.content as any).type === 'function'));
+           // A simple check to see if messages are valid
+          const validMessages = parsed.filter((m: any) => m.id && m.role && typeof m.content === 'string');
           setMessages(validMessages);
         } else {
           setMessages([]);
@@ -133,9 +122,12 @@ export function ChatInterface({ persona, initialModel = 'nvidia' }: ChatInterfac
   useEffect(() => {
     if(!isMounted) return;
     try {
+       // Only store messages with string content to avoid serialization issues
        const messagesToStore = messages.filter(m => typeof m.content === 'string');
        if (messagesToStore.length > 0) {
         localStorage.setItem(storageKey, JSON.stringify(messagesToStore));
+       } else if (messages.length === 0) {
+         localStorage.removeItem(storageKey);
        }
     } catch (e) {
         console.error("Could not save messages to localStorage", e);
@@ -173,7 +165,7 @@ export function ChatInterface({ persona, initialModel = 'nvidia' }: ChatInterfac
     setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "" }]);
 
     try {
-        if (currentModel === 'gemini') {
+        if (persona.tool === 'gemini-chat') {
             const flow = geminiFlows["gemini-chat"];
             if (!flow) throw new Error(`Invalid tool for Gemini: ${persona.tool}`);
             
@@ -185,7 +177,7 @@ export function ChatInterface({ persona, initialModel = 'nvidia' }: ChatInterfac
                 msg.id === assistantId ? { ...msg, content } : msg
                 )
             );
-        } else { // NVIDIA
+        } else { // Standard AI model
             await getNvidiaAIResponse(persona.tool, currentInput, (chunk) => {
                 setMessages((prev) =>
                     prev.map((msg) =>
@@ -217,14 +209,18 @@ export function ChatInterface({ persona, initialModel = 'nvidia' }: ChatInterfac
      }
      // For Gemini quiz, it might return a JSON string
      if ((persona.tool === 'gemini-chat' || persona.tool === 'quiz') && message.role === 'assistant' && message.content.includes('question')) {
-        return <QuizDisplay quizText={message.content as string} topic="Quiz" />;
+        try {
+            const quizJson = JSON.parse(message.content);
+            if (quizJson.quiz) {
+                 return <QuizDisplay quizData={quizJson} topic="Quiz" />;
+            }
+        } catch (e) {
+            // Not valid JSON, fall through to markdown
+        }
      }
     return <ReactMarkdown className="prose dark:prose-invert max-w-full">{message.content}</ReactMarkdown>;
   };
 
-  const handleModelToggle = () => {
-    setCurrentModel(prev => prev === 'nvidia' ? 'gemini' : 'nvidia');
-  }
 
   if (!isMounted) {
     return (
@@ -239,18 +235,9 @@ export function ChatInterface({ persona, initialModel = 'nvidia' }: ChatInterfac
       <div className="h-full flex flex-col rounded-lg">
         <header className="flex flex-row items-center justify-between gap-2 p-4 border-b">
            <div className="flex items-center gap-2">
-            <div className="hidden md:flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
-                <BrainCircuit className="h-5 w-5 text-primary" /> AI Model: <span className="capitalize font-semibold text-foreground">{currentModel}</span>
-            </div>
+           {/* Placeholder for potential future header content */}
           </div>
           <div className="flex items-center gap-2">
-            { isGeminiEnabled && (
-                <div className="flex items-center space-x-2">
-                    <Label htmlFor="model-switch" className="text-sm font-medium">NVIDIA</Label>
-                    <Switch id="model-switch" checked={currentModel === 'gemini'} onCheckedChange={handleModelToggle} />
-                    <Label htmlFor="model-switch" className="text-sm font-medium">Gemini</Label>
-                </div>
-            )}
             <Tooltip>
                 <TooltipTrigger asChild>
                     <Button variant="ghost" size="icon" onClick={handleClearChat} disabled={messages.length === 0}>

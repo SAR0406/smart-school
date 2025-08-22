@@ -82,6 +82,18 @@ export function OnboardingTour({ refs }: OnboardingTourProps) {
   const step = tourSteps[currentStep];
   const targetRef = refs[step.id];
 
+  if (!targetRef?.current) {
+    // If the target element for the current step is not rendered,
+    // either skip to the next step or end the tour.
+    if (currentStep < tourSteps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      handleFinish();
+    }
+    return null;
+  }
+
+
   return (
     <>
       {tourSteps.map((s, index) => {
@@ -98,6 +110,7 @@ export function OnboardingTour({ refs }: OnboardingTourProps) {
                         width: ref.current.getBoundingClientRect().width,
                         height: ref.current.getBoundingClientRect().height,
                         pointerEvents: 'none',
+                        zIndex: 100,
                     }}
                 />
             </TooltipTrigger>

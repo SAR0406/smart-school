@@ -4,16 +4,28 @@
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { Loader2 } from "lucide-react";
 
 // Helper function to safely parse stringified JSON
 const safelyParseJson = (jsonString: string): any | null => {
+    // Attempt to find a valid JSON object within a larger string
+    const match = jsonString.match(/{\s*"quiz":\s*\[/);
+    if (!match) return null;
+
+    const startIndex = match.index;
     try {
-        return JSON.parse(jsonString);
+        // Try parsing from the start of the potential JSON object
+        return JSON.parse(jsonString.substring(startIndex!));
     } catch (error) {
-        return null;
+        // Fallback for simple cases if the above fails
+         try {
+            return JSON.parse(jsonString)
+        } catch (e) {
+            return null
+        }
     }
 };
 
@@ -95,7 +107,12 @@ export function QuizDisplay({ quizData: initialQuizData, quizText, topic }: Quiz
   const handleSubmit = () => {
     let correctCount = 0;
     quizData.forEach((q, index) => {
-      if (answers[index] === q.correctAnswer) {
+      // Case-insensitive and trims whitespace for short answers
+      const isCorrect = q.options && q.options.length > 0
+        ? answers[index] === q.correctAnswer
+        : answers[index]?.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase();
+
+      if (isCorrect) {
         correctCount++;
       }
     });
@@ -109,6 +126,10 @@ export function QuizDisplay({ quizData: initialQuizData, quizText, topic }: Quiz
       setScore(0);
   }
 
+  const getNumberOfQuestionsToAnswer = () => {
+    return quizData.length;
+  }
+  
   return (
     <Card className="mt-4">
         <CardHeader>
@@ -171,7 +192,11 @@ export function QuizDisplay({ quizData: initialQuizData, quizText, topic }: Quiz
                                 ))}
                             </RadioGroup>
                         ) : (
-                            <p className="text-sm text-muted-foreground">This is a short answer question. The answer will be revealed after submission.</p>
+                             <Input
+                                placeholder="Type your answer..."
+                                value={answers[qIndex] || ''}
+                                onChange={(e) => setAnswers(prev => ({...prev, [qIndex]: e.target.value}))}
+                             />
                         )}
                     </div>
                 ))}
@@ -180,7 +205,7 @@ export function QuizDisplay({ quizData: initialQuizData, quizText, topic }: Quiz
         </CardContent>
         {!submitted && (
              <CardFooter>
-                <Button onClick={handleSubmit} disabled={Object.keys(answers).length !== quizData.filter(q => q.options && q.options.length > 0).length}>
+                <Button onClick={handleSubmit} disabled={Object.keys(answers).length !== getNumberOfQuestionsToAnswer()}>
                     Submit Quiz
                 </Button>
             </CardFooter>

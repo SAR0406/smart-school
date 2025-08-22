@@ -44,6 +44,10 @@ function AppSidebarContent() {
     if (href === "/dashboard") {
       return pathname === href || pathname.startsWith('/dashboard');
     }
+    // Make AI tools link active for its sub-routes
+    if (href === "/ai") {
+      return pathname === href || pathname.startsWith('/ai');
+    }
     return pathname === href;
   };
 
