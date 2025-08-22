@@ -1,3 +1,4 @@
+
 "use client";
 
 import { usePathname } from "next/navigation";
@@ -13,7 +14,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
-  SidebarTrigger,
+  useSidebar
 } from "@/components/ui/sidebar";
 import { ClassSelector } from "@/components/class-selector";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -27,8 +28,10 @@ const menuItems = [
     { href: "/ai/scanner", label: "Scanner", icon: ScanLine, tourId: 'scanner' },
 ];
 
-function AppSidebar() {
+function AppSidebarContent() {
   const pathname = usePathname();
+  const { isMobile } = useSidebar();
+  
   const refs = {
     dashboard: React.useRef<HTMLButtonElement>(null),
     'ai-tools': React.useRef<HTMLButtonElement>(null),
@@ -45,7 +48,7 @@ function AppSidebar() {
   };
 
   return (
-    <Sidebar side="left" variant="sidebar" collapsible="icon" className="group glassmorphism border-r-0">
+    <>
       <SidebarHeader className="flex items-center justify-between p-2 md:p-0">
         <Link href="/" className="flex h-12 items-center gap-2 px-2 group-data-[collapsible=icon]:h-12 group-data-[collapsible=icon]:justify-center">
           <GraduationCap className="size-6 text-primary" />
@@ -53,9 +56,6 @@ function AppSidebar() {
             SchoolZen
           </h1>
         </Link>
-        <div className="md:hidden">
-            <SidebarTrigger />
-        </div>
       </SidebarHeader>
       <SidebarContent className="p-2 flex flex-col justify-between">
         <div>
@@ -82,11 +82,20 @@ function AppSidebar() {
                 ))}
             </SidebarMenu>
         </div>
-        <SidebarFooter className="hidden md:flex">
+        <SidebarFooter className={cn("hidden", !isMobile && "md:flex")}>
             <ThemeToggle />
         </SidebarFooter>
       </SidebarContent>
-      <OnboardingTour refs={refs} />
+       <OnboardingTour refs={refs} />
+    </>
+  );
+}
+
+
+function AppSidebar() {
+  return (
+    <Sidebar side="left" variant="sidebar" collapsible="icon" className="group glassmorphism border-r-0">
+      <AppSidebarContent />
     </Sidebar>
   );
 }

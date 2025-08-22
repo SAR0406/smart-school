@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetClose } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Tooltip,
@@ -207,8 +207,19 @@ const Sidebar = React.forwardRef<
             }
             side={side}
           >
-            {/* The close button is part of the SheetContent now, so we don't need a custom one. */}
-            <div className="flex h-full w-full flex-col">{children}</div>
+            <div className="flex h-full w-full flex-col">
+              <SheetHeader className="p-2 border-b border-sidebar-border !flex-row items-center justify-between">
+                {/* The title is visually hidden but available to screen readers */}
+                <SheetTitle className="sr-only">Menu</SheetTitle>
+                <SheetClose asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7">
+                    <X />
+                    <span className="sr-only">Close</span>
+                  </Button>
+                </SheetClose>
+              </SheetHeader>
+              {children}
+            </div>
           </SheetContent>
         </Sheet>
       )
