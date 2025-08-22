@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Bot, GraduationCap, LayoutDashboard, MessageSquare, ScanLine } from "lucide-react";
+import React from "react";
 import {
   Sidebar,
   SidebarProvider,
@@ -17,16 +18,23 @@ import {
 import { ClassSelector } from "@/components/class-selector";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
+import { OnboardingTour } from "./onboarding-tour";
 
 const menuItems = [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/ai", label: "AI Tools", icon: Bot },
-    { href: "/gemini", label: "Gemini", icon: Bot },
-    { href: "/ai/scanner", label: "Scanner", icon: ScanLine },
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, tourId: 'dashboard' },
+    { href: "/ai", label: "AI Tools", icon: Bot, tourId: 'ai-tools' },
+    { href: "/gemini", label: "Gemini", icon: Bot, tourId: 'gemini' },
+    { href: "/ai/scanner", label: "Scanner", icon: ScanLine, tourId: 'scanner' },
 ];
 
 function AppSidebar() {
   const pathname = usePathname();
+  const refs = {
+    dashboard: React.useRef<HTMLButtonElement>(null),
+    'ai-tools': React.useRef<HTMLButtonElement>(null),
+    gemini: React.useRef<HTMLButtonElement>(null),
+    scanner: React.useRef<HTMLButtonElement>(null),
+  };
 
   const isLinkActive = (href: string) => {
     // Make dashboard link active for the root of dashboard routes as well
@@ -58,7 +66,8 @@ function AppSidebar() {
                 {menuItems.map((item) => (
                     <SidebarMenuItem key={item.href}>
                          <Link href={item.href} className="w-full">
-                            <SidebarMenuButton 
+                            <SidebarMenuButton
+                              ref={refs[item.tourId as keyof typeof refs]}
                               isActive={isLinkActive(item.href)}
                               tooltip={item.label}
                               className={cn(
@@ -77,6 +86,7 @@ function AppSidebar() {
             <ThemeToggle />
         </SidebarFooter>
       </SidebarContent>
+      <OnboardingTour refs={refs} />
     </Sidebar>
   );
 }

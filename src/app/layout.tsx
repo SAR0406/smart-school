@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Inter, Space_Grotesk } from 'next/font/google';
 import { AppSidebar, SidebarProvider } from '@/components/app-sidebar';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -39,13 +40,15 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
         >
+          <TooltipProvider>
             <SidebarProvider>
               <div className="flex min-h-screen">
                 <AppSidebar />
                 <div className="flex-1">{children}</div>
               </div>
             </SidebarProvider>
-            <Toaster />
+          </TooltipProvider>
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>
