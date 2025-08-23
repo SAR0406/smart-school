@@ -20,6 +20,9 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata: Metadata = {
   title: 'SchoolZen',
   description: 'Your AI-powered school assistant.',
+  verification: {
+    google: '6k7t36vIfJugDcleLCgrXLWzSaWcdgSBIF96RQjVB8c',
+  },
 };
 
 export default function RootLayout({
