@@ -12,6 +12,7 @@ import {
   Quote,
   Bot,
   Shield,
+  ThumbsUp,
   type LucideIcon,
 } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -119,6 +120,20 @@ const personas: AIPersona[] = [
     },
     promptPlaceholder: "e.g., 'Quantum Computing' or 'General Relativity'",
     systemPrompt: "You are an expert at explaining complex topics simply. The user will provide a concept. You must explain it in a way that a 12-year-old can understand. You must start every response with a relevant emoji."
+  },
+  {
+    tool: 'feedback',
+    title: 'Feedback Helper',
+    description: 'Get constructive feedback on your work.',
+    icon: ThumbsUp,
+    color: 'text-pink-500',
+    bgColor: 'bg-pink-500/10',
+    welcome: {
+      title: 'Feedback Helper',
+      message: 'Paste your text, essay, or assignment here to get constructive feedback.',
+    },
+    promptPlaceholder: "e.g., 'Paste your essay here...'",
+    systemPrompt: "You are a school teacher assistant. Give fair and encouraging feedback."
   },
   {
     tool: 'myai',

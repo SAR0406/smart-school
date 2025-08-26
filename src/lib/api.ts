@@ -3,6 +3,7 @@ import type { Class, Period, WeekSchedule, SearchResult } from './types';
 import { scheduleData, classNames } from './data';
 import { format, getDay, parse, set, isBefore, isAfter, isEqual } from 'date-fns';
 import type { UnifiedChatInput } from '@/ai/flows/unified-chat-flow';
+import type { AITool } from '@/components/chat-interface';
 
 type ScheduleData = typeof scheduleData.classes;
 
@@ -165,15 +166,19 @@ export const searchPeriodsBySubject = async (query: string): Promise<SearchResul
     return results;
 }
 
-export const getNvidiaAIResponse = async (input: UnifiedChatInput): Promise<string> => {
+interface NvidiaAIRequest {
+    tool: AITool;
+    prompt: string;
+}
+
+export const getNvidiaAIResponse = async (input: NvidiaAIRequest): Promise<string> => {
     try {
-        const response = await fetch("https://smart-school-ai-backend.onrender.com/chat", {
+        const response = await fetch(`https://smart-school-ai-backend.onrender.com/ai/${input.tool}`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                system_prompt: input.systemPrompt,
                 prompt: input.prompt,
             }),
         });

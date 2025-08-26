@@ -41,7 +41,7 @@ type Message = {
   content: string | React.ReactNode;
 };
 
-type AITool = "chat" | "explain" | "define" | "code" | "summary" | "notes" | "quiz" | "myai" | "gemini-chat";
+export type AITool = "chat" | "explain" | "define" | "code" | "summary" | "notes" | "quiz" | "myai" | "gemini-chat" | "feedback";
 
 export interface AIPersona {
     tool: AITool;
@@ -174,8 +174,8 @@ export function ChatInterface({ persona }: ChatInterfaceProps) {
         } else {
              // All other tools use the external Nvidia backend
             result = await getNvidiaAIResponse({
+                tool: persona.tool,
                 prompt: currentInput,
-                systemPrompt: persona.systemPrompt,
             });
         }
         
