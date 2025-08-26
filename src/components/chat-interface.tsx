@@ -30,8 +30,8 @@ import { Label } from "./ui/label";
 import { Switch } from "./ui/switch";
 
 // API and Flow Imports
-import { getNvidiaAIResponse } from "@/lib/api";
 import { chatWithGemini } from "@/ai/flows/gemini-chat-flow";
+import { getAIResponse } from "@/ai/flows/unified-chat-flow";
 
 
 type Message = {
@@ -41,7 +41,6 @@ type Message = {
 };
 
 type AITool = "chat" | "explain" | "define" | "code" | "summary" | "notes" | "quiz" | "myai" | "gemini-chat";
-type AIModel = "nvidia" | "gemini";
 
 export interface AIPersona {
     tool: AITool;
@@ -52,6 +51,7 @@ export interface AIPersona {
     bgColor: string;
     welcome: { title: string; message: string };
     promptPlaceholder?: string;
+    systemPrompt: string; // Add a system prompt for the persona
 }
 
 
@@ -162,30 +162,30 @@ export function ChatInterface({ persona }: ChatInterfaceProps) {
     setIsLoading(true);
 
     const assistantId = (Date.now() + 1).toString();
+    // Add a placeholder for the assistant's response
     setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "" }]);
 
     try {
+        let result: string;
+        // The 'gemini-chat' tool uses a different, simpler flow
         if (persona.tool === 'gemini-chat') {
             const flow = geminiFlows["gemini-chat"];
             if (!flow) throw new Error(`Invalid tool for Gemini: ${persona.tool}`);
-            
-            const result = await flow(currentInput);
-            const content = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
-            
-            setMessages((prev) =>
-                prev.map((msg) =>
-                msg.id === assistantId ? { ...msg, content } : msg
-                )
-            );
-        } else { // Standard AI model
-            await getNvidiaAIResponse(persona.tool, currentInput, (chunk) => {
-                setMessages((prev) =>
-                    prev.map((msg) =>
-                    msg.id === assistantId ? { ...msg, content: (msg.content as string) + chunk } : msg
-                    )
-                );
+            result = await flow(currentInput);
+        } else {
+             // All other tools use the unified flow
+            result = await getAIResponse({
+                prompt: currentInput,
+                systemPrompt: persona.systemPrompt,
             });
         }
+        
+        setMessages((prev) =>
+            prev.map((msg) =>
+            msg.id === assistantId ? { ...msg, content: result } : msg
+            )
+        );
+
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
       setMessages((prev) =>
@@ -203,12 +203,11 @@ export function ChatInterface({ persona }: ChatInterfaceProps) {
     if (typeof message.content !== 'string') {
       return message.content;
     }
-     // For NVIDIA quiz, we need to parse the plain text.
+     // For quiz tools, try to parse and render with QuizDisplay
      if (persona.tool === 'quiz' && message.role === 'assistant' && message.content.includes('1.')) {
         return <QuizDisplay quizText={message.content as string} topic="Quiz" />;
      }
-     // For Gemini quiz, it might return a JSON string
-     if ((persona.tool === 'gemini-chat' || persona.tool === 'quiz') && message.role === 'assistant' && message.content.includes('question')) {
+     if (message.role === 'assistant' && message.content.includes('question')) {
         try {
             const quizJson = JSON.parse(message.content);
             if (quizJson.quiz) {

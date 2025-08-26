@@ -163,17 +163,3 @@ export const searchPeriodsBySubject = async (query: string): Promise<SearchResul
     }
     return results;
 }
-
-
-export const getNvidiaAIResponse = async (tool: string, prompt: string, streamCallback: (chunk: string) => void) => {
-  const modifiedPrompt = `You must start every response with a relevant emoji. User query: ${prompt}`;
-  // This would be a fetch call in a real app
-  const dummyResponse = `🤖 Mock response for ${tool}: ${modifiedPrompt}`;
-  
-  // Simulate streaming
-  const chunks = dummyResponse.split(' ');
-  for (let i = 0; i < chunks.length; i++) {
-    await new Promise(resolve => setTimeout(resolve, 50));
-    streamCallback(chunks[i] + ' ');
-  }
-}

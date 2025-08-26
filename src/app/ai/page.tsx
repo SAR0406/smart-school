@@ -34,11 +34,12 @@ const personas: AIPersona[] = [
       message: 'You can ask me anything about your studies or any general questions you might have.',
     },
     promptPlaceholder: "e.g., 'What are the main themes in Hamlet?'",
+    systemPrompt: "You are a helpful AI assistant. You must start every response with a relevant emoji."
   },
   {
     tool: 'quiz',
     title: 'Quiz Generator',
-    description: 'Create multiple-choice quizzes on any topic.',
+    description: 'Create quizzes on any topic.',
     icon: HelpCircle,
     color: 'text-blue-500',
     bgColor: 'bg-blue-500/10',
@@ -47,6 +48,7 @@ const personas: AIPersona[] = [
       message: 'Enter a topic to generate a 5-question multiple-choice quiz.',
     },
     promptPlaceholder: "e.g., 'The Solar System' or 'Shakespeare's Plays'",
+    systemPrompt: "You are a quiz generation expert. The user will provide a topic. You must generate a 5-question multiple-choice quiz on that topic. Ensure you provide the questions, options, and the correct answer for each question. You must start every response with a relevant emoji."
   },
   {
     tool: 'notes',
@@ -60,6 +62,7 @@ const personas: AIPersona[] = [
       message: 'Enter a topic to generate detailed, well-structured study notes.',
     },
     promptPlaceholder: "e.g., 'The French Revolution' or 'The Water Cycle'",
+    systemPrompt: "You are a note-taking expert. The user will provide a topic. You must generate detailed, well-structured study notes on that topic, using markdown for formatting (headings, bullet points, etc.). You must start every response with a relevant emoji."
   },
   {
     tool: 'summary',
@@ -73,6 +76,7 @@ const personas: AIPersona[] = [
       message: 'Paste in a long piece of text to get a concise summary.',
     },
     promptPlaceholder: 'Paste your text here to summarize...',
+    systemPrompt: "You are a text summarization expert. The user will provide a piece of text. You must generate a concise summary of the provided text. You must start every response with a relevant emoji."
   },
   {
     tool: 'code',
@@ -86,6 +90,7 @@ const personas: AIPersona[] = [
       message: 'Paste a code snippet or ask a programming question to get help.',
     },
     promptPlaceholder: "e.g., 'How do I sort an array in JavaScript?'",
+    systemPrompt: "You are a coding expert. The user will ask a programming question or provide a code snippet. You must provide helpful explanations, code examples, or debugging assistance. Use markdown for code blocks. You must start every response with a relevant emoji."
   },
   {
     tool: 'define',
@@ -99,6 +104,7 @@ const personas: AIPersona[] = [
       message: 'Enter any word or term to get a clear and concise definition.',
     },
     promptPlaceholder: "e.g., 'Photosynthesis' or 'Capitalism'",
+    systemPrompt: "You are an expert lexicographer. The user will provide a term. You must provide a clear and concise definition for that term. You must start every response with a relevant emoji."
   },
   {
     tool: 'explain',
@@ -112,6 +118,7 @@ const personas: AIPersona[] = [
       message: "Enter a complex topic and get a simple explanation, like you're 12!",
     },
     promptPlaceholder: "e.g., 'Quantum Computing' or 'General Relativity'",
+    systemPrompt: "You are an expert at explaining complex topics simply. The user will provide a concept. You must explain it in a way that a 12-year-old can understand. You must start every response with a relevant emoji."
   },
   {
     tool: 'myai',
@@ -125,6 +132,7 @@ const personas: AIPersona[] = [
       message: 'I am Jarvis, your personal AI assistant. How may I be of service today?',
     },
     promptPlaceholder: "e.g., 'What's on my schedule?'",
+    systemPrompt: "You are Jarvis, a witty, sophisticated, and incredibly helpful personal AI assistant, inspired by the character from the Iron Man movies. You must always stay in character. You must start every response with a relevant emoji."
   },
 ];
 
