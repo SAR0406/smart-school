@@ -2,6 +2,7 @@
 import type { Class, Period, WeekSchedule, SearchResult } from './types';
 import { scheduleData, classNames } from './data';
 import { format, getDay, parse, set, isBefore, isAfter, isEqual } from 'date-fns';
+import type { UnifiedChatInput } from '@/ai/flows/unified-chat-flow';
 
 type ScheduleData = typeof scheduleData.classes;
 
@@ -163,3 +164,33 @@ export const searchPeriodsBySubject = async (query: string): Promise<SearchResul
     }
     return results;
 }
+
+export const getNvidiaAIResponse = async (input: UnifiedChatInput): Promise<string> => {
+    try {
+        const response = await fetch("https://smart-school-ai-backend.onrender.com/nvidia-chat", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                system_prompt: input.systemPrompt,
+                prompt: input.prompt,
+            }),
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`Request failed with status ${response.status}: ${errorBody}`);
+        }
+
+        const data = await response.json();
+        return data.response;
+
+    } catch (error) {
+        console.error("Failed to get response from Nvidia AI:", error);
+        if (error instanceof Error) {
+            return `Error: Could not connect to the AI service. ${error.message}`;
+        }
+        return "An unknown error occurred while contacting the AI service.";
+    }
+};

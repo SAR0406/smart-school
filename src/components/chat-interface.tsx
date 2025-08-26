@@ -32,6 +32,7 @@ import { Switch } from "./ui/switch";
 // API and Flow Imports
 import { chatWithGemini } from "@/ai/flows/gemini-chat-flow";
 import { getAIResponse } from "@/ai/flows/unified-chat-flow";
+import { getNvidiaAIResponse } from "@/lib/api";
 
 
 type Message = {
@@ -167,14 +168,12 @@ export function ChatInterface({ persona }: ChatInterfaceProps) {
 
     try {
         let result: string;
-        // The 'gemini-chat' tool uses a different, simpler flow
+        // The 'gemini-chat' tool uses the Genkit flow
         if (persona.tool === 'gemini-chat') {
-            const flow = geminiFlows["gemini-chat"];
-            if (!flow) throw new Error(`Invalid tool for Gemini: ${persona.tool}`);
-            result = await flow(currentInput);
+            result = await chatWithGemini(currentInput);
         } else {
-             // All other tools use the unified flow
-            result = await getAIResponse({
+             // All other tools use the external Nvidia backend
+            result = await getNvidiaAIResponse({
                 prompt: currentInput,
                 systemPrompt: persona.systemPrompt,
             });
