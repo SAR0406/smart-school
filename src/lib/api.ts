@@ -167,7 +167,7 @@ export const searchPeriodsBySubject = async (query: string): Promise<SearchResul
 
 export const getNvidiaAIResponse = async (input: UnifiedChatInput): Promise<string> => {
     try {
-        const response = await fetch("https://smart-school-ai-backend.onrender.com/nvidia-chat", {
+        const response = await fetch("https://smart-school-ai-backend.onrender.com/chat", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
