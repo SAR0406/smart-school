@@ -188,8 +188,23 @@ export const getNvidiaAIResponse = async (input: NvidiaAIRequest): Promise<strin
             throw new Error(`Request failed with status ${response.status}: ${errorBody}`);
         }
 
-        const data = await response.json();
-        return data.response;
+        const textResponse = await response.text();
+        // Since the backend returns a plain text stream, we directly return it.
+        // If the backend sometimes returns JSON with a 'response' field,
+        // we might need more complex logic here, but for now, this handles plain text.
+        try {
+            // Try to parse it as JSON first, in case the non-streaming endpoint is hit
+            const data = JSON.parse(textResponse);
+            if (data && data.response) {
+                return data.response;
+            }
+        } catch (e) {
+            // If it fails, it's likely plain text, so return it directly.
+            return textResponse;
+        }
+        // Fallback for cases where it's JSON but not in the expected format.
+        return textResponse;
+
 
     } catch (error) {
         console.error("Failed to get response from Nvidia AI:", error);
